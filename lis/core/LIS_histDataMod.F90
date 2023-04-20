@@ -448,6 +448,9 @@ module LIS_histDataMod
   public :: LIS_MOC_WCMV1V2
   public :: LIS_MOC_AC70FC
   public :: LIS_MOC_AC70Irrigation
+  public :: LIS_MOC_AC70Runoff
+  public :: LIS_MOC_AC70Drain
+  public :: LIS_MOC_AC70Infiltrated
   public :: LIS_MOC_AC70StressTot_Temp
   public :: LIS_MOC_AC70StressTot_Sto
   public :: LIS_MOC_AC70RootZoneWC_Actual
@@ -455,6 +458,8 @@ module LIS_histDataMod
   public :: LIS_MOC_AC70RootZoneWC_FC
   public :: LIS_MOC_AC70Tact
   public :: LIS_MOC_AC70Eact
+  public :: LIS_MOC_AC70Tpot
+  public :: LIS_MOC_AC70Epot
   public :: LIS_MOC_AC70RootingDepth
   public :: LIS_MOC_AC70CCiActual
   
@@ -964,6 +969,9 @@ module LIS_histDataMod
    integer :: LIS_MOC_WCMV1V2  = -9999
    integer :: LIS_MOC_AC70FC  = -9999
    integer :: LIS_MOC_AC70Irrigation  = -9999
+   integer :: LIS_MOC_AC70Runoff = -9999
+   integer :: LIS_MOC_AC70Drain = -9999
+   integer :: LIS_MOC_AC70Infiltrated = -9999
    integer :: LIS_MOC_AC70StressTot_Temp  = -9999
    integer :: LIS_MOC_AC70StressTot_Sto  = -9999
    integer :: LIS_MOC_AC70RootZoneWC_Actual  = -9999
@@ -971,6 +979,8 @@ module LIS_histDataMod
    integer :: LIS_MOC_AC70RootZoneWC_FC  = -9999
    integer :: LIS_MOC_AC70Tact  = -9999
    integer :: LIS_MOC_AC70Eact  = -9999
+   integer :: LIS_MOC_AC70Tpot  = -9999
+   integer :: LIS_MOC_AC70Epot  = -9999
    integer :: LIS_MOC_AC70RootingDepth  = -9999
    integer :: LIS_MOC_AC70CCiActual  = -9999
 
@@ -4667,7 +4677,44 @@ contains
             n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
             model_patch=.true.)
     endif
+    
+    ! LB (21FEB2023) added Runoff, Drain, Infiltrated, Tpot and Epot
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC70Runoff:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC70Runoff",&
+         "AC70_Runoff",&
+         "AC70 Runoff",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Runoff,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
 
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC70Drain:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC70Drain",&
+         "AC70_Drain",&
+         "AC70 Drain",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Drain,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC70Infiltrated:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC70Infiltrated",&
+         "AC70_Infiltrated",&
+         "AC70 Infiltrated",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Infiltrated,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+    
     call ESMF_ConfigFindLabel(modelSpecConfig,"AC70StressTot_Temp:",rc=rc)
     call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
          "AC70StressTot_Temp",&
@@ -4747,6 +4794,30 @@ contains
          "AC70 Eact",rc)
     if ( rc == 1 ) then
        call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Eact,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC70Tpot:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC70Tpot",&
+         "AC70_Tpot",&
+         "AC70 Tpot",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Tpot,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC70Epot:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC70Epot",&
+         "AC70_Epot",&
+         "AC70 Epot",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC70Epot,&
             LIS_histData(n)%head_lsm_list,&
             n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
             model_patch=.true.)
