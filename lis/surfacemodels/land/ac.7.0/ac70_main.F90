@@ -986,8 +986,7 @@ subroutine Ac70_main(n)
             end if
             AC70_struc(n)%ac70(t)%AC70FC = AC70_struc(n)%ac70(t)%SoilLayer(1)%fc
 
-    if ((LIS_rc%mo .eq. 12) .AND. (LIS_rc%da .eq. 31)) then
-        ! Note for later: change 12 and 31 to variables from lis.config.file
+    if ((LIS_rc%mo .eq. AC70_struc(n)%Crop_AnnualEndMonth) .AND. (LIS_rc%da .eq. AC70_struc(n)%Crop_AnnualEndDay)) then
         AC70_struc(n)%ac70(t)%InitializeRun = 1
         !call FinalizeRun1(AC70_struc(n)%ac70(t)%irun, GetTheProjectFile(), AC70_struc(n)%ac70(t)%TheProjectType)
         call FinalizeRun2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType)
