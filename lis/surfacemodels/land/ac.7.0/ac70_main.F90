@@ -20,7 +20,6 @@
 !
 !   9/4/14: Shugong Wang; initial implementation for Ac70 with LIS-7
 !   2/7/18: Soni Yatheendradas; code added for OPTUE to work
-!	27JAN2023: Louise Busschaert; implementation of dynamic irrigation season
 !
 ! !INTERFACE:
 subroutine Ac70_main(n)
@@ -482,7 +481,6 @@ subroutine Ac70_main(n)
     real                 :: tmp_TMIN_ac        ! 
     real                 :: tmp_TMAX_ac        ! 
     real                 :: tmp_ETo_ac         ! 
-    real				 :: gthresh			   !LB: dynamic irr
 
 
     ! check Ac70 alarm. If alarm is ring, run model. 
@@ -760,20 +758,6 @@ subroutine Ac70_main(n)
                call SetSimulation_SumGDDfromDay1(GetSimulation_SumGDDfromDay1() + &
                   GetGDDayi())
             end if
-
-            !LB Dynamic irrigation season
-            if (AC70_struc(n)%irrigation_dveg .eq. 1) then
-               ! Calculate threshold
-               gthresh = GetCrop_CCini() &
-                         + (AC70_struc(n)%irrigation_CCparam1 + AC70_struc(n)%irrigation_CCparam2*&
-                         (GetCrop_CCx() - GetCrop_CCini())) * (GetCrop_CCx() - GetCrop_CCini())
-              if (GetCCiActual() .ge. gthresh) then
-                 call SetIrriInfoRecord1_TimeInfo(AC70_struc(n)%irrigation_threshold)
-              else
-                 call SetIrriInfoRecord1_TimeInfo(400)
-              endif
-            endif
-            ! End changes by LB
 
             !write(LIS_logunit,*) &
             !                '[INFO] AdvanceOneTimeStep AquaCrop, day in month: ', LIS_rc

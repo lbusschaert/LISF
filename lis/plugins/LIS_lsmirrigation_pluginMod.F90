@@ -17,6 +17,7 @@ module LIS_lsmirrigation_pluginMod
 !
 ! !REVISION HISTORY:
 !  13 Nov 2012    Sujay Kumar  Initial Specification
+!  02 Oct 2023    Louise Busschaert Added AC70
 !
   implicit none
 
@@ -60,6 +61,10 @@ subroutine LIS_lsmirrigation_plugin
    external noahmp401_getirrigationstates
 #endif
 
+#if ( defined SM_AC_7_0 )
+   external ac70_getirrigationstates
+#endif
+
 #if ( defined IRR_SPRINKLER )
 #if ( defined SM_NOAH_3_3 )
    call registerlsmirrigationgetstates(trim(LIS_noah33Id)//"+"//&
@@ -84,6 +89,11 @@ subroutine LIS_lsmirrigation_plugin
 #if ( defined SM_NOAHMP_4_0_1 )
    call registerlsmirrigationgetstates(trim(LIS_noahmp401Id)//"+"//&
         trim(LIS_sprinklerIrrigationId)//char(0),NoahMP401_getirrigationstates)
+#endif
+
+#if ( defined SM_AC_7_0 )
+   call registerlsmirrigationgetstates(trim(LIS_ac70Id)//"+"//&
+        trim(LIS_sprinklerIrrigationId)//char(0),ac70_getirrigationstates)
 #endif
 #endif
 
