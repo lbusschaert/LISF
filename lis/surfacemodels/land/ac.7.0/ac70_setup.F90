@@ -602,19 +602,40 @@ subroutine Ac70_setup()
                 ! MB: for current generic crop this is fixed to 1
                 call set_project_input(l, 'Simulation_YearSeason', 1_int8)
                 ! Simulation
-                call LIS_get_julhr(LIS_rc%syr+(l-1), 1,1,0,0,0,time1julhours)
-                call LIS_get_julhr(LIS_rc%syr+(l-1),12,31,0,0,0,time2julhours)
+                call LIS_get_julhr(LIS_rc%syr+(l-1),LIS_rc%smo,LIS_rc%sda,0,0,0,time1julhours)
+                ! call LIS_get_julhr(LIS_rc%syr+(l-1),LIS_rc%smo,LIS_rc%sda,0,0,0,time2julhours)
                 time1days = (time1julhours - timerefjulhours)/24 + 1
-                time2days = (time2julhours - timerefjulhours)/24 + 1
+                ! time2days = (time2julhours - timerefjulhours)/24 + 1
+                ! Find last day of simulation (check for leap year)
+                if ((((mod(LIS_rc%syr+(l-1),4).eq.0.and.mod(LIS_rc%syr+(l-1),100).ne.0) &
+                    .or.(mod(LIS_rc%syr+(l-1),400).eq.0)).and.(LIS_rc%smo.le.2)) &
+                    .or.(((mod(LIS_rc%syr+(l),4).eq.0.and.mod(LIS_rc%syr+(l),100).ne.0) &
+                    .or.(mod(LIS_rc%syr+(l),400).eq.0)).and.(LIS_rc%smo.gt.2))) then ! leap year in sim period
+                    time2days = time1days + 365
+                else ! no leap year
+                    time2days = time1days + 364
+                endif
                 call set_project_input(l, 'Simulation_DayNr1', time1days)
                 call set_project_input(l, 'Simulation_DayNrN', time2days)
+                ! write statements to check !LB
+                write(LIS_logunit, *) 'Simulation_DayNr1',l,time1days
+                write(LIS_logunit, *) 'Simulation_DayNrN',l,time2days
                 ! Crop
                 call LIS_get_julhr(LIS_rc%syr+(l-1),AC70_struc(n)%Crop_AnnualStartMonth,AC70_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
                 call LIS_get_julhr(LIS_rc%syr+(l-1),AC70_struc(n)%Crop_AnnualEndMonth,AC70_struc(n)%Crop_AnnualEndDay,0,0,0,time2julhours)
                 time1days = (time1julhours - timerefjulhours)/24 + 1
                 time2days = (time2julhours - timerefjulhours)/24 + 1
+                ! Check if end of cropping period is in the next year
+                ! (does not allow cycles longer than 365, i.e. longer than the sim period)
+                if (time1days.gt.time2days) then
+                    call LIS_get_julhr(LIS_rc%syr+(l),AC70_struc(n)%Crop_AnnualEndMonth,AC70_struc(n)%Crop_AnnualEndDay,0,0,0,time2julhours)
+                    time2days = (time2julhours - timerefjulhours)/24 + 1
+                endif
                 call set_project_input(l, 'Crop_Day1', time1days)
                 call set_project_input(l, 'Crop_DayN', time2days)
+                ! write statements to check !LB
+                write(LIS_logunit, *) 'Crop_Day1',l,time1days
+                write(LIS_logunit, *) 'Crop_DayN',l,time2days
                 !
                 call set_project_input(l, 'Description', ' LIS ')
                 call set_project_input(l, 'Climate_Info', ' MERRA2_AC ')
