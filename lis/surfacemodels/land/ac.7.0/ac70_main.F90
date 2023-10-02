@@ -970,12 +970,12 @@ subroutine Ac70_main(n)
             end if
             AC70_struc(n)%ac70(t)%AC70FC = AC70_struc(n)%ac70(t)%SoilLayer(1)%fc
 
-    if ((LIS_rc%mo .eq. AC70_struc(n)%Crop_AnnualEndMonth) .AND. (LIS_rc%da .eq. AC70_struc(n)%Crop_AnnualEndDay)) then
-        AC70_struc(n)%ac70(t)%InitializeRun = 1
-        !call FinalizeRun1(AC70_struc(n)%ac70(t)%irun, GetTheProjectFile(), AC70_struc(n)%ac70(t)%TheProjectType)
-        call FinalizeRun2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType)
-        AC70_struc(n)%ac70(t)%irun = AC70_struc(n)%ac70(t)%irun + 1
-    end if
+            if (GetDayNri() .eq. ProjectInput(AC70_struc(n)%ac70(t)%irun)%Simulation_DayNrN) then
+                AC70_struc(n)%ac70(t)%InitializeRun = 1
+                !call FinalizeRun1(AC70_struc(n)%ac70(t)%irun, GetTheProjectFile(), AC70_struc(n)%ac70(t)%TheProjectType)
+                call FinalizeRun2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType)
+                AC70_struc(n)%ac70(t)%irun = AC70_struc(n)%ac70(t)%irun + 1
+            end if
             !!! MB_AC70
 
 
