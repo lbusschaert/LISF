@@ -21,7 +21,8 @@ module LIS_irrigationMod
 !  29 May 2019; Jessica Erlingis; Incorporate Wanshu Nie's max/min GVF update
 !  23 Feb 2022; Sara Modanesi; Incorporate Growing season to avoid a double
 !  option (i.e., based on GVF and based on dyn LAI for Noah-MP.v.3.6)
-!  29 Sep 2023; Louise Busschaert; couple irrigation module to AquaCrop
+!  29 Sep 2023; Louise Busschaert; couple irrigation module to AquaCrop;
+!                                   bug fix dynamic growing seaosn Noah-MP3.6
 !
 ! !USES: 
   use ESMF

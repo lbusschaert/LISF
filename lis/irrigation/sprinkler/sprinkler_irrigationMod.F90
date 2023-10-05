@@ -20,6 +20,7 @@ module sprinkler_irrigationMod
 !  11 Nov 2012: Sujay Kumar; Initial implementation
 !  25 Feb 2020: Jessica Erlingis; Update irrigation window
 !  14 Apr 2021: Wanshu Nie; Add support for GW/SW irrigation partitioning
+!  29 Sep 2023; Louise Busschaert; couple irrigation module to AquaCrop
 ! !USES: 
   use ESMF
   use LIS_coreMod
