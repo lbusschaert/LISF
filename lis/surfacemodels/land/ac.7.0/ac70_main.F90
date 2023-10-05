@@ -213,8 +213,6 @@ subroutine Ac70_main(n)
                         SetIrriBeforeSeason,&
                         GetIrriAfterSeason,&
                         SetIrriAfterSeason,&
-                        GetCrop_CCini,&
-                        GetCrop_CCx,&
                         GetCrop_Day1,&
                         DegreesDay,&
                          GetSimulation_ToDayNr, &
@@ -245,7 +243,6 @@ subroutine Ac70_main(n)
                          GetIrriInfoRecord2,&
                          SetIrriInterval,&
                          SetIrriInfoRecord1,&
-                         SetIrriInfoRecord1_TimeInfo,&
                          SetIrriInfoRecord2,&
                          GetTheProjectFile,&
                         GetGwTable,&
@@ -758,7 +755,6 @@ subroutine Ac70_main(n)
                call SetSimulation_SumGDDfromDay1(GetSimulation_SumGDDfromDay1() + &
                   GetGDDayi())
             end if
-
             !write(LIS_logunit,*) &
             !                '[INFO] AdvanceOneTimeStep AquaCrop, day in month: ', LIS_rc
             call AdvanceOneTimeStep(AC70_struc(n)%ac70(t)%WPi)

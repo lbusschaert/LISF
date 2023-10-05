@@ -17,7 +17,6 @@
 !  by Shugong Wang for the NASA Land Information System Version 7. The initial 
 !  specification of the subroutine is defined by Sujay Kumar. 
 !   9/4/14 : Shugong Wang, initial implementation for LIS 7 and Ac70
-!	27JAN2023: Louise Busschaert; implementation of dynamic irrigation season
 !
 ! !INTERFACE:
 subroutine Ac70_readcrd()
@@ -215,36 +214,6 @@ subroutine Ac70_readcrd()
         else
             print*,'Irrigation_Filename: not defined --> set to (None)'
             AC70_struc(n)%Irrigation_Filename = '(None)'
-        endif
-    enddo
-
-    !LB Dynamic irrigation options
-    call ESMF_ConfigFindLabel(LIS_config, &
-                 "Irrigation scheduling based on dynamic vegetation:", rc = rc)
-    do n=1, LIS_rc%nnest
-        if (rc == 0) then
-            call ESMF_ConfigGetAttribute(LIS_config, &
-                AC70_struc(n)%irrigation_dveg, rc=rc)
-                ! If option is ON (1), the default_dyn.IRR file will
-                ! be used as base and irrigation parameters are defined
-                ! in de lis.config file
-                call ESMF_ConfigFindLabel(LIS_config, &
-                          "Irrigation threshold:", rc = rc)
-                call ESMF_ConfigGetAttribute(LIS_config, &
-                        AC70_struc(n)%irrigation_threshold, rc = rc)
-                call LIS_verify(rc, "Irrigation threshold: not defined")
-                call ESMF_ConfigFindLabel(LIS_config, &
-                          "Irrigation CC parameter 1:", rc = rc)
-                call ESMF_ConfigGetAttribute(LIS_config, &
-                        AC70_struc(n)%irrigation_CCparam1, rc = rc)
-                call LIS_verify(rc, "Irrigation CC parameter 1: not defined")
-                call ESMF_ConfigFindLabel(LIS_config, &
-                          "Irrigation CC parameter 2:", rc = rc)
-                call ESMF_ConfigGetAttribute(LIS_config, &
-                        AC70_struc(n)%irrigation_CCparam2, rc = rc) 
-                call LIS_verify(rc, "Irrigation CC parameter 2: not defined")
-        else
-            AC70_struc(n)%irrigation_dveg = 0
         endif
     enddo
  

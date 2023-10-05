@@ -116,7 +116,7 @@ contains
                              LIS_rc%irrigation_thresh
 
      ! SM Feb 2022 add double option for the start of growing season
-       if (LIS_rc%lsm .eq. 'noahmp36') then 
+       if (LIS_rc%lsm .eq. 'Noah-MP.3.6') then 
            LIS_rc%growing_season = 0
            call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%growing_season,&
                 label="Growing season:",default=0,rc=rc)
@@ -231,9 +231,9 @@ contains
 !EOP
 
     if(LIS_rc%irrigation_type.ne."none") then
-    
+
        call getirrigationlsmstates(trim(LIS_rc%lsm)//"+"//&
-           trim(LIS_rc%irrigation_type)//char(0), n,LIS_irrig_state(n))
+            trim(LIS_rc%irrigation_type)//char(0), n,LIS_irrig_state(n))
        call applyirrigationupdates(trim(LIS_rc%irrigation_type)//char(0),&
             n,LIS_irrig_state(n))
        

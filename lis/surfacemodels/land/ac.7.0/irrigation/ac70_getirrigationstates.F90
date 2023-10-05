@@ -21,9 +21,6 @@ subroutine ac70_getirrigationstates(n,irrigState)
   use LIS_coreMod
   use LIS_logMod
   use ac70_lsmMod
-  use ac_global, only:  GetCrop_CCx, &
-						GetCrop_CCini, &
-						SetIrriInfoRecord1_TimeInfo
 						
 
 ! !DESCRIPTION:
@@ -50,7 +47,7 @@ subroutine ac70_getirrigationstates(n,irrigState)
 !EOP
   implicit none
 
-  integer              :: rc
+  integer              :: n,rc
   integer              :: t
   type(ESMF_State)     :: irrigState
   type(ESMF_Field)     :: irrigRateField
@@ -73,19 +70,22 @@ subroutine ac70_getirrigationstates(n,irrigState)
         irrigRate(t) = AC70_struc(n)%ac70(t)%Irrigation/86400
         
         !---------------------------------------------------------------------
-		! For next time step: dynamic irrigation (if option turned on)
-		!----------------------------------------------------------------------
-		if (LIS_rc%irrigation_dveg .eq. 1) then
-			! Calculate threshold
-			gthresh = GetCrop_CCini() &
-					  + (LIS_rc(n)%irrigation_GVFparam1 + LIS_rc(n)%irrigation_GVFparam2*&
-					  (GetCrop_CCx() - GetCrop_CCini())) * (GetCrop_CCx() - GetCrop_CCini())
-			if (AC70_struc(n)%ac70(t)%CCiActual .ge. gthresh) then
-				call SetIrriInfoRecord1_TimeInfo(AC70_struc(n)%irrigation_threshold)
-			else
-				call SetIrriInfoRecord1_TimeInfo(400) ! very large threshold to block irrigation
-			endif
+	! For next time step: dynamic irrigation (if option turned on)
+	!----------------------------------------------------------------------
+	if (LIS_rc%irrigation_dveg .eq. 1) then
+		! Calculate threshold
+		gthresh = AC70_struc(n)%ac70(t)%Crop%CCini &
+			+ (LIS_rc%irrigation_GVFparam1 + LIS_rc%irrigation_GVFparam2*&
+			(AC70_struc(n)%ac70(t)%Crop%CCx - AC70_struc(n)%ac70(t)%Crop%CCini)) &
+			* (AC70_struc(n)%ac70(t)%Crop%CCx - AC70_struc(n)%ac70(t)%Crop%CCini)
+		if (AC70_struc(n)%ac70(t)%CCiActual .ge. gthresh) then
+		    ! Irrigation allowed
+		    AC70_struc(n)%ac70(t)%IrriInfoRecord1%TimeInfo = &
+					    int(LIS_rc%irrigation_thresh)
+		else ! very large threshold to block irrigation
+		    AC70_struc(n)%ac70(t)%IrriInfoRecord1%TimeInfo = 400 
 		endif
+	endif
     end do
 
   end subroutine ac70_getirrigationstates

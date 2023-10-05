@@ -246,7 +246,9 @@ contains
        if(lhr.lt.0) lhr = lhr+24
        
        ltime = real(lhr)+real(LIS_rc%mn)/60.0+real(LIS_rc%ss)/3600.0
-       if((ltime.ge.shift_otimes).and.(ltime.lt.shift_otimee)) then           
+       if (LIS_rc%lsm .eq. 'Aquacrop.7.0') then
+          irrigAmt(t) = irrigRate(t)
+       elseif((ltime.ge.shift_otimes).and.(ltime.lt.shift_otimee)) then           
           tmpval = LIS_domain(n)%tile(t)%index
           prcp(t)=prcp(t)+irrigRate(t)
           irrigAmt(t) = irrigRate(t)
