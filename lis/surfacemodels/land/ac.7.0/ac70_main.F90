@@ -415,7 +415,8 @@ subroutine Ac70_main(n)
                          InitializeRunPart1, &
                          InitializeRunPart2, &
                          InitializeSimulationRunPart2, &
-                         InitializeClimate
+                         InitializeClimate, &
+                         fIrri_close
                          
     use ac_startunit, only:  FinalizeTheProgram, &
                          GetListProjectsFile, &
@@ -742,6 +743,7 @@ subroutine Ac70_main(n)
 
                 !call InitializeRunPart2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType);
                 call InitializeSimulationRunPart2()
+                call fIrri_close()
                 AC70_struc(n)%ac70(t)%InitializeRun = 0
             end if
 
@@ -989,7 +991,7 @@ subroutine Ac70_main(n)
             if (GetDayNri() .eq. ProjectInput(AC70_struc(n)%ac70(t)%irun)%Simulation_DayNrN) then
                 AC70_struc(n)%ac70(t)%InitializeRun = 1
                 !call FinalizeRun1(AC70_struc(n)%ac70(t)%irun, GetTheProjectFile(), AC70_struc(n)%ac70(t)%TheProjectType)
-                call FinalizeRun2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType)
+                ! call FinalizeRun2(AC70_struc(n)%ac70(t)%irun, AC70_struc(n)%ac70(t)%TheProjectType)
                 AC70_struc(n)%ac70(t)%irun = AC70_struc(n)%ac70(t)%irun + 1
             end if
             !!! MB_AC70
