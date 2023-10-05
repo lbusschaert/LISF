@@ -21,6 +21,8 @@ module LIS_irrigationMod
 !  29 May 2019; Jessica Erlingis; Incorporate Wanshu Nie's max/min GVF update
 !  23 Feb 2022; Sara Modanesi; Incorporate Growing season to avoid a double
 !  option (i.e., based on GVF and based on dyn LAI for Noah-MP.v.3.6)
+!  29 Sep 2023; Louise Busschaert; couple irrigation module to AquaCrop;
+!                                   bug fix dynamic growing seaosn Noah-MP3.6
 !
 ! !USES: 
   use ESMF
@@ -115,15 +117,18 @@ contains
                              LIS_rc%irrigation_thresh
 
      ! SM Feb 2022 add double option for the start of growing season
-       call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%growing_season,&
-            label="Growing season:",rc=rc)
-       call LIS_verify(rc,"Growing season: not defined")
-       write(LIS_logunit,*) "and growing season:  ",&
+       if (LIS_rc%lsm .eq. 'Noah-MP.3.6') then 
+           LIS_rc%growing_season = 0
+           call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%growing_season,&
+                label="Growing season:",default=0,rc=rc)
+           write(LIS_logunit,*) "and growing season:  ",&
                              LIS_rc%growing_season
+        endif
      !SM Feb 2022 end changes   
 
      ! Parameters to control the GVF threshold based on the range of GVF
      ! (shdmax-shdmin) for which sprinkler irrigation is triggered:(WN)
+     ! Or CC threshold for AquaCrop
        call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%irrigation_GVFparam1,&
             label="Irrigation GVF parameter 1:",rc=rc)
        call LIS_verify(rc,"Irrigation GVF parameter 1: not defined")
@@ -155,18 +160,20 @@ contains
        write(LIS_logunit,*) "[INFO]and irrigation withdrawn from GW:  ",&
                              LIS_rc%irrigation_GWabstraction
 
-!------Wanshu----irrigation scheduling based on DVEG On--------
-     LIS_rc%irrigation_dveg  = 0 ! Default is no
-     call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%irrigation_dveg,&
+      !------Wanshu----irrigation scheduling based on DVEG On--------
+      ! LB also compatible with AquaCrop
+
+       LIS_rc%irrigation_dveg  = 0 ! Default is no
+       call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%irrigation_dveg,&
             label="Irrigation scheduling based on dynamic vegetation:",default=0,rc=rc)
        call LIS_verify(rc,"Irrigation scheduling based on dynamic vegetation: not defined")
        write(LIS_logunit,*) "[INFO] Irrigation scheduling based on dynamic vegetation:  ",&
                              LIS_rc%irrigation_dveg
-!------------------------------------------------------
+      !------------------------------------------------------
 
-!------Wanshu---GW abstraction based on irrigation groundwater ratio data--------
-     LIS_rc%irrigation_SourcePartition  = 0 ! Default is no
-     call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%irrigation_SourcePartition,&
+      !------Wanshu---GW abstraction based on irrigation groundwater ratio data--------
+       LIS_rc%irrigation_SourcePartition  = 0 ! Default is no
+       call ESMF_ConfigGetAttribute(LIS_config,LIS_rc%irrigation_SourcePartition,&
             label="Irrigation source water partition:",default=0,rc=rc)
        call LIS_verify(rc,"Irrigation source water partition: not defined")
        write(LIS_logunit,*) "[INFO] Irrigation source water partition:  ",&
@@ -224,7 +231,7 @@ contains
 !  \end{description}
 !EOP
 
-    if(LIS_rc%irrigation_type.ne."none") then     
+    if(LIS_rc%irrigation_type.ne."none") then
 
        call getirrigationlsmstates(trim(LIS_rc%lsm)//"+"//&
             trim(LIS_rc%irrigation_type)//char(0), n,LIS_irrig_state(n))

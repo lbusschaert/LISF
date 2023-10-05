@@ -603,9 +603,7 @@ subroutine Ac70_setup()
                 call set_project_input(l, 'Simulation_YearSeason', 1_int8)
                 ! Simulation
                 call LIS_get_julhr(LIS_rc%syr+(l-1),LIS_rc%smo,LIS_rc%sda,0,0,0,time1julhours)
-                ! call LIS_get_julhr(LIS_rc%syr+(l-1),LIS_rc%smo,LIS_rc%sda,0,0,0,time2julhours)
                 time1days = (time1julhours - timerefjulhours)/24 + 1
-                ! time2days = (time2julhours - timerefjulhours)/24 + 1
                 ! Find last day of simulation (check for leap year)
                 if ((((mod(LIS_rc%syr+(l-1),4).eq.0.and.mod(LIS_rc%syr+(l-1),100).ne.0) &
                     .or.(mod(LIS_rc%syr+(l-1),400).eq.0)).and.(LIS_rc%smo.le.2)) &

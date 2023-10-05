@@ -245,10 +245,6 @@ module Ac70_lsmMod
         character(len=256) :: Crop_Filename
         character(len=256) :: Management_Filename
         character(len=256) :: Irrigation_Filename
-        integer            :: irrigation_dveg !LB
-        integer            :: irrigation_threshold !LB
-        real               :: irrigation_CCparam1 !LB
-        real               :: irrigation_CCparam2 !LB
         integer            :: Crop_AnnualStartDay
         integer            :: Crop_AnnualEndDay
         integer            :: Crop_AnnualStartMonth
