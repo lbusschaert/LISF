@@ -609,9 +609,9 @@ subroutine Ac70_setup()
                     .or.(mod(LIS_rc%syr+(l-1),400).eq.0)).and.(LIS_rc%smo.le.2)) &
                     .or.(((mod(LIS_rc%syr+(l),4).eq.0.and.mod(LIS_rc%syr+(l),100).ne.0) &
                     .or.(mod(LIS_rc%syr+(l),400).eq.0)).and.(LIS_rc%smo.gt.2))) then ! leap year in sim period
-                    time2days = time1days + 365
+                    time2days = time1days + 366
                 else ! no leap year
-                    time2days = time1days + 364
+                    time2days = time1days + 365
                 endif
                 call set_project_input(l, 'Simulation_DayNr1', time1days)
                 call set_project_input(l, 'Simulation_DayNrN', time2days)
