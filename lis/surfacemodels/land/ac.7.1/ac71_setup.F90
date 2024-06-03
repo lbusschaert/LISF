@@ -351,7 +351,7 @@ subroutine Ac71_setup()
             AC71_struc(n)%Sim_AnnualEndDay = da2
 
             ! Read annual temperature record
-            call ac71_read_Trecord(n)
+            !call ac71_read_Trecord(n)
 
             do t = 1, LIS_rc%npatch(n, mtype)
                 
