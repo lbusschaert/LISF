@@ -1123,9 +1123,9 @@ subroutine AC72_setup()
 
                 ! If we restart on the first day of simulation
                 ! Do not read Trecord in main but initialize run
-                if ((AC72_struc(n)%Sim_AnnualStartMonth.eq.LIS_rc%smo) &
-                    .and.(AC72_struc(n)%Sim_AnnualStartDay.eq.LIS_rc%sda)) then
-                    AC72_struc(n)%ac72(t)%irun = 2 ! Means that we need to start a new sim
+                if (((AC72_struc(n)%Sim_AnnualStartMonth.eq.LIS_rc%smo) &
+                    .and.(AC72_struc(n)%Sim_AnnualStartDay.eq.LIS_rc%sda)) &
+                    .and.(trim(LIS_rc%startcode) .eq. "restart")) then
                     AC72_struc(n)%ac72(t)%InitializeRun = 1
                 endif
         enddo ! do t = 1, LIS_rc%npatch(n, mtype)
