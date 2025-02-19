@@ -103,12 +103,6 @@ module AC72_module
         real               :: RootZoneWC_ZtopFC
         real               :: RootZoneWC_ZtopWP
         real               :: RootZoneWC_ZtopThresh
-        integer               :: GDDaysToGermination
-        integer               :: GDDaysToHarvest
-        integer               :: GDDaysToSenescence
-        integer               :: GDDaysToMaxRooting
-        real               :: GDDCGC
-        real               :: GDDCDC
         type(rep_RootZoneWC) :: RootZoneWC
         type(rep_Content) :: TotalSaltContent
         type(rep_Content) :: TotalWaterContent
@@ -150,6 +144,7 @@ module AC72_module
         integer(int32) :: NrRuns
         integer :: irun
         integer(int32) :: InitializeRun
+        integer(int32) :: read_Trecord
         integer(intEnum) :: TheProjectType
 
         logical :: EvapoEntireSoilSurface

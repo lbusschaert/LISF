@@ -29,7 +29,7 @@ subroutine AC72_main(n)
     use ac72_prep_f
     use ESMF
 
-    !!! MB_AC72
+    !!! MB_AC70
     use ac_global, only:    DegreesDay,&
                             GetCCiActual,&
                             GetCCiprev,&
@@ -39,6 +39,7 @@ subroutine AC72_main(n)
                             GetCompartment_theta,&
                             GetCrop,&
                             GetCrop_Day1,&
+                            GetCrop_DayN,&
                             GetCrop_DaysToCCini,&
                             GetCrop_DaysToFlowering,&
                             GetCrop_DaysToFullCanopy,&
@@ -50,11 +51,10 @@ subroutine AC72_main(n)
                             GetCrop_DaysTosenescence,&
                             GetCrop_GDDaysToFlowering,&
                             GetCrop_GDDaysToGermination,&
+                            GetCrop_GDDaysToGermination,&
                             GetCrop_GDDaysToHarvest,&
                             GetCrop_GDDaysToMaxRooting,&
                             GetCrop_GDDaysToSenescence,&
-                            GetCrop_GDDCGC,&
-                            GetCrop_GDDCDC,&
                             GetCrop_ModeCycle,&
                             GetCRsalt,&  
                             GetCRwater,& 
@@ -274,12 +274,6 @@ subroutine AC72_main(n)
                             SetTotalWaterContent,&
                             SetTpot,&
                             SetZiAqua,&
-                            SetCrop_GDDaysToGermination,&
-                            SetCrop_GDDaysToHarvest,&
-                            SetCrop_GDDaysToMaxRooting,&
-                            SetCrop_GDDaysToSenescence,&
-                            SetCrop_GDDCGC,&
-                            SetCrop_GDDCDC,&
                             typeproject_typeprm, &
                             typeproject_typepro, &
                             undef_int
@@ -534,7 +528,7 @@ subroutine AC72_main(n)
     ! check AC72 alarm. If alarm is ring, run model.
     alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
     if (alarmCheck) Then
-        if (AC72_struc(n)%ac72(1)%InitializeRun.eq.1) then
+        if (AC72_struc(n)%ac72(1)%read_Trecord.eq.1) then
         ! Read T record of next sim period
             call ac72_read_Trecord(n)
         endif
@@ -788,15 +782,6 @@ subroutine AC72_main(n)
             call SetStartMode(AC72_struc(n)%ac72(t)%StartMode)
             call SetGDDayi(AC72_struc(n)%ac72(t)%GDDayi)
             call SetNoMoreCrop(AC72_struc(n)%AC72(t)%NoMoreCrop)
-            ! Set variables for GDD mode in case of spatially variable parameters
-            if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
-               call SetCrop_GDDaysToGermination(AC72_struc(n)%AC72(t)%GDDaysToGermination)
-               call SetCrop_GDDaysToHarvest(AC72_struc(n)%AC72(t)%GDDaysToHarvest)
-               call SetCrop_GDDaysToMaxRooting(AC72_struc(n)%AC72(t)%GDDaysToMaxRooting)
-               call SetCrop_GDDaysToSenescence(AC72_struc(n)%AC72(t)%GDDaysToSenescence)
-               call SetCrop_GDDCGC(AC72_struc(n)%AC72(t)%GDDCGC)
-               call SetCrop_GDDCDC(AC72_struc(n)%AC72(t)%GDDCDC)
-            endif
 
             ! Fixed var
             call SetOut3Prof(.true.) ! needed for correct rootzone sm
@@ -844,7 +829,9 @@ subroutine AC72_main(n)
 
                 ! For IrriMode_Generate and IrriMode_Manual
                 ! Check if new record needs to be read
-                if(AC72_struc(n)%ac72(t)%IrriMode.eq.IrriMode_Generate) then
+                if((AC72_struc(n)%ac72(t)%IrriMode.eq.IrriMode_Generate) &
+                .and. (GetDayNri() >= GetCrop_Day1()) &
+                .and. (GetDayNri() <= GetCrop_DayN())) then
                     if((AC72_struc(n)%ac72(t)%daynri-AC72_struc(n)%ac72(t)%Crop%Day1+1)&
                     .gt.AC72_struc(n)%ac72(t)%IrriInfoRecord1%ToDay) then
                         irr_record_flag = 1
@@ -947,11 +934,11 @@ subroutine AC72_main(n)
                 endif
                 ! End irrigation block
                 AC72_struc(n)%ac72(t)%InitializeRun = 0 ! Initialization done
+                AC72_struc(n)%ac72(t)%read_Trecord = 0
             end if
 
             ! Run AC
             tmp_wpi = AC72_struc(n)%ac72(t)%WPi
-            !write(LIS_logunit, *) "AdvanceOneTimeStep !!!"
             call AdvanceOneTimeStep(tmp_wpi, AC72_struc(n)%ac72(t)%HarvestNow)
             AC72_struc(n)%ac72(t)%WPi = tmp_wpi
 
@@ -1141,6 +1128,7 @@ subroutine AC72_main(n)
             ! (DayNri - 1 because DayNri is already for next day)
             if ((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) then
                 AC72_struc(n)%ac72(t)%InitializeRun = 1
+                AC72_struc(n)%ac72(t)%read_Trecord = 1
                 AC72_struc(n)%ac72(t)%irun = AC72_struc(n)%ac72(t)%irun + 1
             end if
 
