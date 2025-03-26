@@ -467,7 +467,7 @@ subroutine AC72_main(n)
   use LIS_coreMod, only: LIS_rc, LIS_surface, LIS_domain
   use LIS_histDataMod
   use LIS_logMod, only     : LIS_logunit, LIS_endrun
-  use LIS_timeMgrMod, only : LIS_isAlarmRinging
+  use LIS_timeMgrMod, only : LIS_isAlarmRinging, LIS_get_julhr
 
   implicit none
 
@@ -490,6 +490,10 @@ subroutine AC72_main(n)
 
   ! For AdvanceOneTimeStep
   real                 :: tmp_wpi
+
+  ! For flexible planting/sowing with criteria
+  integer              :: start_day_t, start_day_p
+  integer              :: time1julhours, timerefjulhours, time1days, time2days
   !
   ! !DESCRIPTION:
   !  This is the entry point for calling the AC72 physics.
@@ -862,6 +866,47 @@ subroutine AC72_main(n)
            call set_project_input(AC72_struc(n)%ac72(t)%irun, &
                 'Crop_Filename', &
                 trim(AC72_struc(n)%ac72(t)%cropt)//'.CRO')
+
+           ! Set sowing/planting date based on criterion if activated
+           ! Set for first year, needs to be defined in main
+           if (AC72_struc(n)%Temp_crit) then
+               ! Search start and add it to sim 
+               ! Define start sim (already done before)
+               call LIS_get_julhr(1901,1,1,0,0,0,timerefjulhours)
+               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+                     AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
+               time1days = (time1julhours - timerefjulhours)/24 + 1
+               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+                     AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
+               time2days = (time1julhours - timerefjulhours)/24 + 1
+               start_day_t = ac72_search_start_Temp(time1days,time2days,AC72_struc(n)%crit_window, &
+                                                AC72_struc(n)%Temp_crit_tmin, AC72_struc(n)%Temp_crit_days, &
+                                                AC72_struc(n)%Temp_crit_occurrence, AC72_struc(n)%ac72(t)%Tmin_record)
+               call set_project_input(1, 'Crop_Day1', start_day_t)
+               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature criterion", start_day_t
+           endif
+
+           if (AC72_struc(n)%Rainfall_crit) then
+               ! Search start and add it to sim 
+               ! Define start sim (already done before)
+               call LIS_get_julhr(1901,1,1,0,0,0,timerefjulhours)
+               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+                     AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
+               time1days = (time1julhours - timerefjulhours)/24 + 1
+               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+                     AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
+               time2days = (time1julhours - timerefjulhours)/24 + 1
+               start_day_p = ac72_search_start_Rainfall(time1days,time2days,AC72_struc(n)%crit_window, &
+                                                AC72_struc(n)%Rainfall_crit_amount, AC72_struc(n)%Rainfall_crit_days, &
+                                                AC72_struc(n)%Rainfall_crit_occurrence, AC72_struc(n)%ac72(t)%pcp_record)
+               call set_project_input(1, 'Crop_Day1', start_day_p)
+               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on rainfall criterion", start_day_p
+           endif
+
+           if (AC72_struc(n)%Temp_crit.and.AC72_struc(n)%Rainfall_crit) then
+               call set_project_input(1, 'Crop_Day1', max(start_day_t, start_day_t))
+               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature and rainfall criterion", max(start_day_t, start_day_t)
+           endif
 
            ! Set Global variable to pass T record to AquaCrop
            call SetTminRun(AC72_struc(n)%ac72(t)%Tmin_record)

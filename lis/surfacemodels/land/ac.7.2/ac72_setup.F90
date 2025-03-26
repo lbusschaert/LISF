@@ -516,7 +516,8 @@ subroutine AC72_setup()
        WriteProjectsInfo
 
   use AC72_lsmMod
-  use ac72_prep_f,    only: ac72_read_Trecord
+  use ac72_prep_f,    only: ac72_read_Trecord, ac72_search_start_Temp, &
+                            ac72_search_start_Rainfall
 
   use LIS_constantsMod, only: LIS_CONST_TKFRZ
   use LIS_coreMod,   only: LIS_rc, LIS_surface
@@ -555,6 +556,7 @@ subroutine AC72_setup()
   integer           :: REW, descr
   integer           :: time1julhours, timerefjulhours
   integer           :: time1days, time2days
+  integer           :: start_day_t, start_day_p
 
   integer(intEnum) :: TheProjectType
 
@@ -665,6 +667,7 @@ subroutine AC72_setup()
              AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
         time1days = (time1julhours - timerefjulhours)/24 + 1
         !Note: end of cropping period is defined by crop params
+        ! in case of a temperature/rainfall criterion, this will be overwritten
         call set_project_input(l, 'Crop_Day1', time1days)
         call set_project_input(l, 'Crop_DayN', time2days)
         ! Note: '(External)' input sources can vary spatially (e.g. soil, crop, meteo)
@@ -720,7 +723,7 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     call ac72_read_Trecord(n)
+     !call ac72_read_Trecord(n)
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
@@ -740,6 +743,46 @@ subroutine AC72_setup()
            call set_project_input(l, 'Crop_Filename', &
                 trim(AC72_struc(n)%ac72(t)%cropt)//'.CRO')
         enddo
+
+        ! Set sowing/planting date based on criterion if activated
+        ! Set for first year, needs to be defined in main
+        if (AC72_struc(n)%Temp_crit) then
+            ! Search start and add it to sim 
+            ! Define start sim (already done before)
+            call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+                  AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
+            time1days = (time1julhours - timerefjulhours)/24 + 1
+            call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+                  AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
+            time2days = (time1julhours - timerefjulhours)/24 + 1
+            start_day_t = ac72_search_start_Temp(time1days,time2days,AC72_struc(n)%crit_window, &
+                                             AC72_struc(n)%Temp_crit_tmin, AC72_struc(n)%Temp_crit_days, &
+                                             AC72_struc(n)%Temp_crit_occurrence, AC72_struc(n)%ac72(t)%Tmin_record)
+            call set_project_input(1, 'Crop_Day1', start_day_t)
+            write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature criterion", start_day_t
+        endif
+
+        if (AC72_struc(n)%Rainfall_crit) then
+            ! Search start and add it to sim 
+            ! Define start sim (already done before)
+            call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+                  AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
+            time1days = (time1julhours - timerefjulhours)/24 + 1
+            call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+                  AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
+            time2days = (time1julhours - timerefjulhours)/24 + 1
+            start_day_p = ac72_search_start_Rainfall(time1days,time2days,AC72_struc(n)%crit_window, &
+                                             AC72_struc(n)%Rainfall_crit_amount, AC72_struc(n)%Rainfall_crit_days, &
+                                             AC72_struc(n)%Rainfall_crit_occurrence, AC72_struc(n)%ac72(t)%pcp_record)
+            call set_project_input(1, 'Crop_Day1', start_day_p)
+            write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on rainfall criterion", start_day_p
+        endif
+
+        if (AC72_struc(n)%Temp_crit.and.AC72_struc(n)%Rainfall_crit) then
+            call set_project_input(1, 'Crop_Day1', max(start_day_t, start_day_t))
+            write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature and rainfall criterion", max(start_day_t, start_day_t)
+        endif
+
         call CheckForKeepSWC(MultipleRunWithKeepSWC_temp, &
              MultipleRunConstZrx_temp)
         call SetSimulation_MultipleRunWithKeepSWC(MultipleRunWithKeepSWC_temp)

@@ -237,6 +237,7 @@ module AC72_module
      logical  :: HarvestNow
      real(sp), pointer :: Tmax_record(:)
      real(sp), pointer :: Tmin_record(:)
+     real(sp), pointer :: pcp_record(:)
      integer :: irri_lnr
 
      logical :: NoMoreCrop
