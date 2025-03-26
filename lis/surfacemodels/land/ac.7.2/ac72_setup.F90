@@ -723,7 +723,7 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     !call ac72_read_Trecord(n)
+     call ac72_read_Trecord(n)
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
