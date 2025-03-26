@@ -144,9 +144,6 @@ module AC72_module
      integer(int8) :: OutputAggregate
 
      integer(int32) :: NrRuns
-     integer :: irun
-     integer(int32) :: InitializeRun
-     integer(int32) :: read_Trecord
      integer(intEnum) :: TheProjectType
 
      logical :: EvapoEntireSoilSurface

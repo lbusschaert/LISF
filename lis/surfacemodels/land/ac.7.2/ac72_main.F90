@@ -842,6 +842,7 @@ subroutine AC72_main(n)
 
 !!! initialize run (year)
         if (AC72_struc(n)%ac72(t)%InitializeRun.eq.1) then !make it flex
+           AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
            call SetClimRecord_DataType(0_int8)
            call SetClimRecord_fromd(0)
            call SetClimRecord_fromdaynr(ProjectInput(1)%Simulation_DayNr1)
@@ -859,7 +860,7 @@ subroutine AC72_main(n)
            AC72_struc(n)%ac72(t)%WPi = 0.
 
            ! Set crop file (crop parameters are read when calling InitializeRunPart1)
-           call set_project_input(AC72_struc(n)%ac72(t)%irun, &
+           call set_project_input(AC72_struc(n)%irun, &
                 'Crop_Filename', &
                 trim(AC72_struc(n)%ac72(t)%cropt)//'.CRO')
 
@@ -877,7 +878,7 @@ subroutine AC72_main(n)
            call SetTnxReferenceFile('(External)')
 
            ! InitializeRunPart
-           call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun,kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+           call InitializeRunPart1(int(AC72_struc(n)%irun,kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
            call InitializeSimulationRunPart2()
            AC72_struc(n)%ac72(t)%HarvestNow = .false. ! Initialize to false
            ! Check if enough GDDays to complete cycle
@@ -1109,10 +1110,9 @@ subroutine AC72_main(n)
 
         ! Check for end of simulation period
         ! (DayNri - 1 because DayNri is already for next day)
-        if ((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) then
-           AC72_struc(n)%ac72(t)%InitializeRun = 1
-           AC72_struc(n)%ac72(t)%read_Trecord = 1
-           AC72_struc(n)%ac72(t)%irun = AC72_struc(n)%ac72(t)%irun + 1
+        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) .and. InitializeRun_flag.eq.0) then
+           AC72_struc(n)%InitializeRun = 1 ! Next surface model run, initialize
+           AC72_struc(n)%read_Trecord = 1 ! Next surface model run, read meteo record
         end if
 
         ! Diagnostic output variables

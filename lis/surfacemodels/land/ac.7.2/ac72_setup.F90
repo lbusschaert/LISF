@@ -988,8 +988,8 @@ subroutine AC72_setup()
         ! InitializeRunPart1
         call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
         call InitializeSimulationRunPart2()
-        AC72_struc(n)%ac72(t)%InitializeRun = 0
-        AC72_struc(n)%ac72(t)%read_Trecord = 0
+        AC72_struc(n)%InitializeRun = 0
+        AC72_struc(n)%read_Trecord = 0
         ! Check if enough GDDays to complete cycle, if not, turn on flag to warn the user
         AC72_struc(n)%AC72(t)%crop = GetCrop()
         if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
@@ -1206,7 +1206,7 @@ subroutine AC72_setup()
         if (((AC72_struc(n)%Sim_AnnualStartMonth.eq.LIS_rc%smo) &
              .and.(AC72_struc(n)%Sim_AnnualStartDay.eq.LIS_rc%sda)) &
              .and.(trim(LIS_rc%startcode) .eq. "restart")) then
-           AC72_struc(n)%ac72(t)%InitializeRun = 1
+           AC72_struc(n)%InitializeRun = 1
         endif
 
      enddo ! do t = 1, LIS_rc%npatch(n, mtype)
