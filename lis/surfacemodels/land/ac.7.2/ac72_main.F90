@@ -506,10 +506,13 @@ subroutine AC72_main(n)
   ! check AC72 alarm. If alarm is ring, run model.
   alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck) Then
-     if (AC72_struc(n)%ac72(1)%read_Trecord.eq.1) then
+     irun_local = AC72_struc(n)%irun
+     ! TODO: check for read_Trecord and Initialize run MPI
+     if (read_Trecord_flag.eq.1) then
         ! Read T record of next sim period
         call ac72_read_Trecord(n)
      endif
+
      do t = 1, LIS_rc%npatch(n, LIS_rc%lsm_index)
         dt = LIS_rc%ts
         row = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%row
@@ -841,7 +844,7 @@ subroutine AC72_main(n)
         ! End irrigation block
 
 !!! initialize run (year)
-        if (AC72_struc(n)%ac72(t)%InitializeRun.eq.1) then !make it flex
+        if (InitializeRun_flag.eq.1) then !make it flex
            AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
            call SetClimRecord_DataType(0_int8)
            call SetClimRecord_fromd(0)
@@ -917,8 +920,8 @@ subroutine AC72_main(n)
               endif
            endif
            ! End irrigation block
-           AC72_struc(n)%ac72(t)%InitializeRun = 0 ! Initialization done
-           AC72_struc(n)%ac72(t)%read_Trecord = 0
+           AC72_struc(n)%InitializeRun = 0 ! Initialization done
+           AC72_struc(n)%read_Trecord = 0
         end if
 
         ! Run AC

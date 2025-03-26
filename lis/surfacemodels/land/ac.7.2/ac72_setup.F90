@@ -722,6 +722,9 @@ subroutine AC72_setup()
      ! Read annual temperature record
      call ac72_read_Trecord(n)
 
+     ! InitializeSimulation (year)
+     AC72_struc(n)%irun = 1
+
      do t = 1, LIS_rc%npatch(n, mtype)
 
         col = LIS_surface(n, mtype)%tile(t)%col
@@ -951,9 +954,6 @@ subroutine AC72_setup()
              ProgramParametersAvailable)
         call SetSimulation_MultipleRun(.true.)
         call SetSimulation_NrRuns(TotalSimRuns)
-
-        ! InitializeSimulation (year)
-        AC72_struc(n)%ac72(t)%irun = 1
 
         call SetClimRecord_DataType(0_int8)
         call SetClimRecord_fromd(0)
