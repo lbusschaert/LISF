@@ -173,6 +173,7 @@ contains
 
     if (AC72_struc(n)%Rainfall_crit) then
         allocate(daily_pcp_arr(LIS_rc%npatch(n,LIS_rc%lsm_index),366))
+        daily_pcp_arr = 0
     endif
 
     ! Set LIS_rc time to beginning of simulation period (in case of restart)
@@ -203,23 +204,23 @@ contains
           ! Store temperatures
           subdaily_arr(:,j) = tmp
 
+        if (AC72_struc(n)%Rainfall_crit) then
+            ! Get and store rainfall (for sowing/planting based on rainfall criterion)
+            call ESMF_StateGet(LIS_FORC_State(n), trim(LIS_FORC_Rainf%varname(1)), pcpField, rc=status)
+            call LIS_verify(status, "AC72_f2t: error getting Rainf")
+
+            call ESMF_FieldGet(pcpField, localDE = 0, farrayPtr = pcp, rc = status)
+            call LIS_verify(status, "AC72_f2t: error retrieving Rainf")
+
+            daily_pcp_arr(:,i) = daily_pcp_arr(:,i) + pcp 
+        endif
+
           ! Change LIS time to the next meteo time step
           call LIS_advance_timestep(LIS_rc)
        enddo
        ! Store daily max and min temperatures
        daily_tmax_arr(:,i) = maxval(subdaily_arr,2)
        daily_tmin_arr(:,i) = minval(subdaily_arr,2)
-
-       if (AC72_struc(n)%Rainfall_crit) then
-          ! Get and store rainfall (for sowing/planting based on rainfall criterion)
-          call ESMF_StateGet(LIS_FORC_State(n), trim(LIS_FORC_Rainf%varname(1)), pcpField, rc=status)
-          call LIS_verify(status, "AC72_f2t: error getting Rainf")
-
-          call ESMF_FieldGet(pcpField, localDE = 0, farrayPtr = pcp, rc = status)
-          call LIS_verify(status, "AC72_f2t: error retrieving Rainf")
-
-          daily_pcp_arr(:,i) = pcp
-       endif
 
        ! Stop loop
        if ((LIS_rc%da.eq.AC72_struc(n)%Sim_AnnualStartDay)&
@@ -239,7 +240,7 @@ contains
        AC72_struc(n)%ac72(t)%Tmax_record = anint((daily_tmax_arr(tid,:)-LIS_CONST_TKFRZ)*10000)/10000
        AC72_struc(n)%ac72(t)%Tmin_record = anint((daily_tmin_arr(tid,:)-LIS_CONST_TKFRZ)*10000)/10000
        if (AC72_struc(n)%Rainfall_crit) then
-           AC72_struc(n)%ac72(t)%pcp_record =  anint(daily_pcp_arr(:,i)*86400*10000)/10000
+           AC72_struc(n)%ac72(t)%pcp_record =  anint(daily_pcp_arr(tid,:)*86400*10000)/10000
        endif
     enddo
 
