@@ -468,6 +468,7 @@ subroutine AC72_main(n)
   use LIS_histDataMod
   use LIS_logMod, only     : LIS_logunit, LIS_endrun
   use LIS_timeMgrMod, only : LIS_isAlarmRinging, LIS_get_julhr
+  use LIS_mpiMod
 
   implicit none
 
@@ -484,6 +485,11 @@ subroutine AC72_main(n)
   integer              :: l
   integer              :: irr_record_flag, DNr ! for irri file management
   character(250)       :: TempStr
+
+  ! Initialization management
+  integer              :: read_Trecord_flag, InitializeRun_flag
+  integer              :: irun_local
+  integer              :: ierr
 
   real                 :: tmp_pres, tmp_precip, tmp_tmax, tmp_tmin   ! Weather Forcing
   real                 :: tmp_tdew, tmp_swrad, tmp_wind, tmp_eto     ! Weather Forcing
@@ -510,10 +516,26 @@ subroutine AC72_main(n)
   ! check AC72 alarm. If alarm is ring, run model.
   alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck) Then
-     if (AC72_struc(n)%ac72(1)%read_Trecord.eq.1) then
+     irun_local = AC72_struc(n)%irun
+     read_Trecord_flag = 0
+     InitializeRun_flag = 0
+
+     ! Wait for processors
+     call MPI_Barrier(LIS_MPI_COMM, ierr)
+     ! Get read_Trecord_flag
+     call MPI_ALLREDUCE(AC72_struc(n)%read_Trecord, read_Trecord_flag, 1, &
+          MPI_INTEGER, MPI_MAX,&
+          LIS_mpi_comm, ierr)
+     ! Get InitializeRun_flag
+     call MPI_ALLREDUCE(AC72_struc(n)%InitializeRun, InitializeRun_flag, 1, &
+          MPI_INTEGER, MPI_MAX,&
+          LIS_mpi_comm, ierr)
+
+     if (read_Trecord_flag.eq.1) then
         ! Read T record of next sim period
         call ac72_read_Trecord(n)
      endif
+
      do t = 1, LIS_rc%npatch(n, LIS_rc%lsm_index)
         dt = LIS_rc%ts
         row = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%row
@@ -845,7 +867,8 @@ subroutine AC72_main(n)
         ! End irrigation block
 
 !!! initialize run (year)
-        if (AC72_struc(n)%ac72(t)%InitializeRun.eq.1) then !make it flex
+        if (InitializeRun_flag.eq.1) then !make it flex
+           AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
            call SetClimRecord_DataType(0_int8)
            call SetClimRecord_fromd(0)
            call SetClimRecord_fromdaynr(ProjectInput(1)%Simulation_DayNr1)
@@ -863,7 +886,7 @@ subroutine AC72_main(n)
            AC72_struc(n)%ac72(t)%WPi = 0.
 
            ! Set crop file (crop parameters are read when calling InitializeRunPart1)
-           call set_project_input(AC72_struc(n)%ac72(t)%irun, &
+           call set_project_input(AC72_struc(n)%irun, &
                 'Crop_Filename', &
                 trim(AC72_struc(n)%ac72(t)%cropt)//'.CRO')
 
@@ -922,7 +945,7 @@ subroutine AC72_main(n)
            call SetTnxReferenceFile('(External)')
 
            ! InitializeRunPart
-           call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun,kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+           call InitializeRunPart1(int(AC72_struc(n)%irun,kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
            call InitializeSimulationRunPart2()
            AC72_struc(n)%ac72(t)%HarvestNow = .false. ! Initialize to false
            ! Check if enough GDDays to complete cycle
@@ -961,8 +984,8 @@ subroutine AC72_main(n)
               endif
            endif
            ! End irrigation block
-           AC72_struc(n)%ac72(t)%InitializeRun = 0 ! Initialization done
-           AC72_struc(n)%ac72(t)%read_Trecord = 0
+           AC72_struc(n)%InitializeRun = 0 ! Initialization done
+           AC72_struc(n)%read_Trecord = 0
         end if
 
         ! Run AC
@@ -1154,10 +1177,9 @@ subroutine AC72_main(n)
 
         ! Check for end of simulation period
         ! (DayNri - 1 because DayNri is already for next day)
-        if ((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) then
-           AC72_struc(n)%ac72(t)%InitializeRun = 1
-           AC72_struc(n)%ac72(t)%read_Trecord = 1
-           AC72_struc(n)%ac72(t)%irun = AC72_struc(n)%ac72(t)%irun + 1
+        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) .and. AC72_struc(n)%InitializeRun.eq.0) then
+           AC72_struc(n)%InitializeRun = 1 ! Next surface model run, initialize
+           AC72_struc(n)%read_Trecord = 1 ! Next surface model run, read meteo record
         end if
 
         ! Diagnostic output variables

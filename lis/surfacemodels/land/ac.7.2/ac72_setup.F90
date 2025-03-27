@@ -723,7 +723,12 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     call ac72_read_Trecord(n)
+     !call ac72_read_Trecord(n)
+     AC72_struc(n)%ac72(t)%Tmin_record = 1
+     AC72_struc(n)%ac72(t)%Tmax_record = 5
+
+     ! InitializeSimulation (year)
+     AC72_struc(n)%irun = 1
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
@@ -995,9 +1000,6 @@ subroutine AC72_setup()
         call SetSimulation_MultipleRun(.true.)
         call SetSimulation_NrRuns(TotalSimRuns)
 
-        ! InitializeSimulation (year)
-        AC72_struc(n)%ac72(t)%irun = 1
-
         call SetClimRecord_DataType(0_int8)
         call SetClimRecord_fromd(0)
         call SetClimRecord_fromdaynr(ProjectInput(1)%Simulation_DayNr1)
@@ -1029,10 +1031,10 @@ subroutine AC72_setup()
         call SetTnxReferenceFile('(External)')
 
         ! InitializeRunPart1
-        call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+        call InitializeRunPart1(int(AC72_struc(n)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
         call InitializeSimulationRunPart2()
-        AC72_struc(n)%ac72(t)%InitializeRun = 0
-        AC72_struc(n)%ac72(t)%read_Trecord = 0
+        AC72_struc(n)%InitializeRun = 0
+        AC72_struc(n)%read_Trecord = 0
         ! Check if enough GDDays to complete cycle, if not, turn on flag to warn the user
         AC72_struc(n)%AC72(t)%crop = GetCrop()
         if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
@@ -1249,7 +1251,7 @@ subroutine AC72_setup()
         if (((AC72_struc(n)%Sim_AnnualStartMonth.eq.LIS_rc%smo) &
              .and.(AC72_struc(n)%Sim_AnnualStartDay.eq.LIS_rc%sda)) &
              .and.(trim(LIS_rc%startcode) .eq. "restart")) then
-           AC72_struc(n)%ac72(t)%InitializeRun = 1
+           AC72_struc(n)%InitializeRun = 1
         endif
 
      enddo ! do t = 1, LIS_rc%npatch(n, mtype)
