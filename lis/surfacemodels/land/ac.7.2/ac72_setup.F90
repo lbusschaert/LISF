@@ -720,7 +720,9 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     call ac72_read_Trecord(n)
+     !call ac72_read_Trecord(n)
+     AC72_struc(n)%ac72(t)%Tmin_record = 1
+     AC72_struc(n)%ac72(t)%Tmax_record = 5
 
      ! InitializeSimulation (year)
      AC72_struc(n)%irun = 1
@@ -986,7 +988,7 @@ subroutine AC72_setup()
         call SetTnxReferenceFile('(External)')
 
         ! InitializeRunPart1
-        call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+        call InitializeRunPart1(int(AC72_struc(n)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
         call InitializeSimulationRunPart2()
         AC72_struc(n)%InitializeRun = 0
         AC72_struc(n)%read_Trecord = 0

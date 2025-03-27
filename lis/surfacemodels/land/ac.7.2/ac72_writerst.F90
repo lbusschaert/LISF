@@ -28,6 +28,7 @@ subroutine AC72_writerst(n)
   use LIS_logMod, only     : LIS_logunit, LIS_getNextUnitNumber, &
        LIS_releaseUnitNumber , LIS_verify
   use LIS_timeMgrMod, only : LIS_isAlarmRinging
+  use LIS_mpiMod
 #if (defined USE_NETCDF3 || defined USE_NETCDF4)
   use netcdf
 #endif
@@ -54,9 +55,11 @@ subroutine AC72_writerst(n)
 
   character(len=LIS_CONST_PATH_LEN) :: filen
   character*20  :: wformat
-  logical       :: alarmCheck, alarmCheck_sf, InitializeRun_flag
+  logical       :: alarmCheck, alarmCheck_sf
   integer       :: ftn
   integer       :: status
+  integer       :: InitializeRun_flag
+  integer       :: ierr
 
   external :: AC72_dump_restart
 
@@ -67,8 +70,13 @@ subroutine AC72_writerst(n)
   ! Only check if surface model alarm is ringing
   alarmCheck_sf = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck_sf) then
-     ! TO DO Add MPI_BARRIER and MPI_ALLREDUCE for InitializeRun
-     InitializeRun_flag ??
+     InitializeRun_flag = 0
+     ! Wait for processors
+     call MPI_Barrier(LIS_MPI_COMM, ierr)
+     ! Get InitializeRun_flag
+     call MPI_ALLREDUCE(AC72_struc(n)%InitializeRun, InitializeRun_flag, 1, &
+          MPI_INTEGER, MPI_MAX,&
+          LIS_mpi_comm, ierr)
   endif
 
   ! set restart file format (read from LIS configration file_

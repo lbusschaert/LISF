@@ -468,6 +468,7 @@ subroutine AC72_main(n)
   use LIS_histDataMod
   use LIS_logMod, only     : LIS_logunit, LIS_endrun
   use LIS_timeMgrMod, only : LIS_isAlarmRinging
+  use LIS_mpiMod
 
   implicit none
 
@@ -484,6 +485,11 @@ subroutine AC72_main(n)
   integer              :: l
   integer              :: irr_record_flag, DNr ! for irri file management
   character(250)       :: TempStr
+
+  ! Initialization management
+  integer              :: read_Trecord_flag, InitializeRun_flag
+  integer              :: irun_local
+  integer              :: ierr
 
   real                 :: tmp_pres, tmp_precip, tmp_tmax, tmp_tmin   ! Weather Forcing
   real                 :: tmp_tdew, tmp_swrad, tmp_wind, tmp_eto     ! Weather Forcing
@@ -507,7 +513,20 @@ subroutine AC72_main(n)
   alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck) Then
      irun_local = AC72_struc(n)%irun
-     ! TODO: check for read_Trecord and Initialize run MPI
+     read_Trecord_flag = 0
+     InitializeRun_flag = 0
+
+     ! Wait for processors
+     call MPI_Barrier(LIS_MPI_COMM, ierr)
+     ! Get read_Trecord_flag
+     call MPI_ALLREDUCE(AC72_struc(n)%read_Trecord, read_Trecord_flag, 1, &
+          MPI_INTEGER, MPI_MAX,&
+          LIS_mpi_comm, ierr)
+     ! Get InitializeRun_flag
+     call MPI_ALLREDUCE(AC72_struc(n)%InitializeRun, InitializeRun_flag, 1, &
+          MPI_INTEGER, MPI_MAX,&
+          LIS_mpi_comm, ierr)
+
      if (read_Trecord_flag.eq.1) then
         ! Read T record of next sim period
         call ac72_read_Trecord(n)
@@ -1113,7 +1132,7 @@ subroutine AC72_main(n)
 
         ! Check for end of simulation period
         ! (DayNri - 1 because DayNri is already for next day)
-        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) .and. InitializeRun_flag.eq.0) then
+        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) .and. AC72_struc(n)%InitializeRun.eq.0) then
            AC72_struc(n)%InitializeRun = 1 ! Next surface model run, initialize
            AC72_struc(n)%read_Trecord = 1 ! Next surface model run, read meteo record
         end if
