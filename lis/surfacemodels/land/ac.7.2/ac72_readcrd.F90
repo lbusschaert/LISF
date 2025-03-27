@@ -160,10 +160,6 @@ subroutine AC72_readcrd()
       AC72_struc(n)%Rainfall_crit = .false.
   endif
 
-  if ((.not.AC72_struc(n)%Temp_crit).and.(.not.AC72_struc(n)%Rainfall_crit)) then
-      write(LIS_logunit, *)'[INFO] AC72 using fixed planting/sowing date'
-  endif
-
   ! PathNameSimul
   call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 input path:", rc = rc)
   do n=1, LIS_rc%nnest

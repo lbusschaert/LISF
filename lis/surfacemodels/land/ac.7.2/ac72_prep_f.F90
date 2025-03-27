@@ -212,7 +212,7 @@ contains
             call ESMF_FieldGet(pcpField, localDE = 0, farrayPtr = pcp, rc = status)
             call LIS_verify(status, "AC72_f2t: error retrieving Rainf")
 
-            daily_pcp_arr(:,i) = daily_pcp_arr(:,i) + pcp 
+            daily_pcp_arr(:,i) = daily_pcp_arr(:,i) + pcp*LIS_rc%ts
         endif
 
           ! Change LIS time to the next meteo time step
@@ -240,7 +240,7 @@ contains
        AC72_struc(n)%ac72(t)%Tmax_record = anint((daily_tmax_arr(tid,:)-LIS_CONST_TKFRZ)*10000)/10000
        AC72_struc(n)%ac72(t)%Tmin_record = anint((daily_tmin_arr(tid,:)-LIS_CONST_TKFRZ)*10000)/10000
        if (AC72_struc(n)%Rainfall_crit) then
-           AC72_struc(n)%ac72(t)%pcp_record =  anint(daily_pcp_arr(tid,:)*86400*10000)/10000
+           AC72_struc(n)%ac72(t)%pcp_record =  anint(daily_pcp_arr(tid,:)*10000)/10000
        endif
     enddo
 
@@ -310,15 +310,14 @@ integer function ac72_search_start_Temp(startsim_julian_days, startcrop_julian_d
         if (consecutive_met) then
             occurrence_count = occurrence_count + 1
             if (occurrence_count == Temp_crit_occurrence) then
-                ac72_search_start_Temp = startcrop_julian_days + (t - search_start)
+                ac72_search_start_Temp = startcrop_julian_days + (t + i - search_start)
                 return
             end if
-            ! Move `t` to the next day to allow an early window reset
-            t = t + i + 1
-            cycle  ! Skip the next increment and continue search from next day
+            ! Move `t` to the end of the window
+            t = t + i
         end if
 
-        ! Move to the next day if no valid window was found
+        ! Move to the next day
         t = t + 1
     end do
 
@@ -330,6 +329,8 @@ end function ac72_search_start_Temp
 
 integer function ac72_search_start_Rainfall(startsim_julian_days, startcrop_julian_days, crit_window, &
                                             Rainfall_crit_amount, Rainfall_crit_days, Rainfall_crit_occurrence, pcp_record)
+
+    use LIS_logMod,         only: LIS_logunit
 
     implicit none
     ! Input parameters
@@ -359,16 +360,16 @@ integer function ac72_search_start_Rainfall(startsim_julian_days, startcrop_juli
             if (sum_pcp > Rainfall_crit_amount) then
                 occurrence_count = occurrence_count + 1
                 if (occurrence_count == Rainfall_crit_occurrence) then
-                    ac72_search_start_Rainfall = startcrop_julian_days + (t - search_start)
+                    ac72_search_start_Rainfall = startcrop_julian_days + (t + i - search_start)
                     return
                 end if
-                ! Move `t` to the next day for a new window
-                t = t + i + 1
+                ! Move `t` to the end of the window
+                t = t + i
                 exit  ! Exit inner loop early
             end if
         end do
 
-        ! Move to the next day if no valid window was found
+        ! Move to the next day
         t = t + 1
     end do
 

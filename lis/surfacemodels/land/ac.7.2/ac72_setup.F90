@@ -520,7 +520,7 @@ subroutine AC72_setup()
                             ac72_search_start_Rainfall
 
   use LIS_constantsMod, only: LIS_CONST_TKFRZ
-  use LIS_coreMod,   only: LIS_rc, LIS_surface
+  use LIS_coreMod,   only: LIS_rc, LIS_surface, LIS_domain
   use LIS_fileIOMod, only: LIS_read_param
   use LIS_logMod,    only: LIS_logunit, LIS_verify, LIS_endrun
   use LIS_timeMgrMod, only: LIS_get_julhr
