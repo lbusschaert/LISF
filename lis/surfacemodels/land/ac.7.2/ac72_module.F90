@@ -90,9 +90,11 @@ module AC72_module
      !-------------------------------------------------------------------------
      real, pointer      :: smc(:)
      !-------------------------------------------------------------------------
-     ! AC specific (all AC global variables)
+     ! AC specific (all AC global variables + others)
      !-------------------------------------------------------------------------
-     real               :: cycle_complete
+     integer            :: cycle_complete
+     integer            :: valid_sim
+     real               :: tbase
      integer            :: daynri
      real               :: RootZoneWC_Actual
      real               :: RootZoneWC_FC
