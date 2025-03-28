@@ -536,6 +536,11 @@ subroutine AC72_main(n)
         call ac72_read_Trecord(n)
      endif
 
+     if (InitializeRun_flag.eq.1) then
+        ! Advace one run
+        AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
+     endif
+
      do t = 1, LIS_rc%npatch(n, LIS_rc%lsm_index)
         dt = LIS_rc%ts
         row = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%row
@@ -868,7 +873,6 @@ subroutine AC72_main(n)
 
 !!! initialize run (year)
         if (InitializeRun_flag.eq.1) then !make it flex
-           AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
            call SetClimRecord_DataType(0_int8)
            call SetClimRecord_fromd(0)
            call SetClimRecord_fromdaynr(ProjectInput(1)%Simulation_DayNr1)
@@ -905,7 +909,7 @@ subroutine AC72_main(n)
                start_day_t = ac72_search_start_Temp(time1days,time2days,AC72_struc(n)%crit_window, &
                                                 AC72_struc(n)%Temp_crit_tmin, AC72_struc(n)%Temp_crit_days, &
                                                 AC72_struc(n)%Temp_crit_occurrence, AC72_struc(n)%ac72(t)%Tmin_record)
-               call set_project_input(1, 'Crop_Day1', start_day_t)
+               call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', start_day_t)
                write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature criterion", start_day_t
            endif
 
@@ -922,12 +926,12 @@ subroutine AC72_main(n)
                start_day_p = ac72_search_start_Rainfall(time1days,time2days,AC72_struc(n)%crit_window, &
                                                 AC72_struc(n)%Rainfall_crit_amount, AC72_struc(n)%Rainfall_crit_days, &
                                                 AC72_struc(n)%Rainfall_crit_occurrence, AC72_struc(n)%ac72(t)%pcp_record)
-               call set_project_input(1, 'Crop_Day1', start_day_p)
+               call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', start_day_p)
                write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on rainfall criterion", start_day_p
            endif
 
            if (AC72_struc(n)%Temp_crit.and.AC72_struc(n)%Rainfall_crit) then
-               call set_project_input(1, 'Crop_Day1', max(start_day_t, start_day_t))
+               call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', max(start_day_t, start_day_t))
                write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature and rainfall criterion", max(start_day_t, start_day_t)
            endif
 
