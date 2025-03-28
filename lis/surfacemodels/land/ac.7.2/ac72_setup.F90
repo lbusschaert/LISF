@@ -721,7 +721,7 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     !call ac72_read_Trecord(n)
+     call ac72_read_Trecord(n)
 
      ! InitializeSimulation (year)
      AC72_struc(n)%irun = 1
@@ -972,10 +972,6 @@ subroutine AC72_setup()
 
         AC72_struc(n)%ac72(t)%WPi = 0.
 
-        ! DEBUG:
-        AC72_struc(n)%ac72(t)%Tmin_record = 1
-        AC72_struc(n)%ac72(t)%Tmax_record = 5
-
         ! Set Global variable to pass T record to AquaCrop
         call SetTminRun(AC72_struc(n)%ac72(t)%Tmin_record)
         call SetTmaxRun(AC72_struc(n)%ac72(t)%Tmax_record)
@@ -992,9 +988,10 @@ subroutine AC72_setup()
 
         ! Check if temperatures are high enough for crop production from Trecord
         ! Get base temperature
-        frac_lower = real(count(((AC72_struc(n)%ac72(t)%Tmin_record + AC72_struc(n)%ac72(t)%Tmin_record)/2.) &
-                          <AC72_struc(n)%ac72(t)%tbase)))/366.
-        if (frac_lower.lt.0.1)) then
+        frac_lower = real(count( ((AC72_struc(n)%ac72(t)%Tmin_record + AC72_struc(n)%ac72(t)%Tmin_record)/2. > &
+                              AC72_struc(n)%ac72(t)%tbase) )) / 366.
+
+        if (frac_lower.lt.0.1) then
            AC72_struc(n)%ac72(t)%valid_sim = 0
         else
            AC72_struc(n)%ac72(t)%valid_sim = 1
@@ -1228,8 +1225,9 @@ subroutine AC72_setup()
          endif
 
       else ! No valid temperatures for crop growth, set all output variables to Nan
-         do i = 1, 12
-            AC72_struc(n)%ac72(t)%smc(i) = -9999.0
+         do l = 1, 12
+            AC72_struc(n)%ac72(t)%smc(l) = -9999.0 ! Gets overwritten by initial conditions, 
+                                                   ! need to be reset in main
          end do
          AC72_struc(n)%ac72(t)%SumWaBal%Biomass        = -9999.0
          AC72_struc(n)%ac72(t)%RootZoneWC_Actual       = -9999.0
@@ -1408,7 +1406,7 @@ subroutine ac72_read_croptype(n)
   !   \end{description}
   !
   !EOP
-  character(len=LIS_CONST_PATH_LEN) :: crop_path
+  character(len=LIS_CONST_PATH_LEN) :: crop_path,crop_file
   integer                 :: ftn, ftn1
   integer                 :: t,col,row,IINDEX,CT,n_crops,j
   integer                 :: nid, ios, ios1, croptypeId
@@ -1449,7 +1447,7 @@ subroutine ac72_read_croptype(n)
      read(ftn,*) IINDEX, croptypes(CT)
 
      ! Open crop file to get Tbase (line 8)
-     crop_file = trim(dir)//"AC_Crop.Files/"//trim(read_cropname)//".CRO"
+     crop_file = trim(AC72_struc(n)%PathCropFiles)//trim(croptypes(CT))//".CRO"
      ftn1 = LIS_getNextUnitNumber()
      open(ftn1, file=crop_file, status='old', form='formatted',&
           iostat=ios1)

@@ -249,6 +249,7 @@ subroutine AC72_main(n)
        SetTact,&
        SetTactWeedInfested,&
        SetTemperatureRecord,&
+       SetTemperatureFile,&
        SetTmax,&
        SetTmaxRun, &
        SetTmaxRun_i, &
@@ -533,92 +534,93 @@ subroutine AC72_main(n)
      endif
 
      do t = 1, LIS_rc%npatch(n, LIS_rc%lsm_index)
-        if (AC72_struc(n)%ac72(t)%valid_sim.eq.1) then ! prepare and run AquaCrop
-         dt = LIS_rc%ts
-         row = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%row
-         col = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%col
-         lat = LIS_domain(n)%grid(LIS_domain(n)%gindex(col, row))%lat
-         lon = LIS_domain(n)%grid(LIS_domain(n)%gindex(col, row))%lon
-         tmp_elev = LIS_domain(n)%tile(t)%elev
+      dt = LIS_rc%ts
+      row = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%row
+      col = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%col
+      lat = LIS_domain(n)%grid(LIS_domain(n)%gindex(col, row))%lat
+      lon = LIS_domain(n)%grid(LIS_domain(n)%gindex(col, row))%lon
+      tmp_elev = LIS_domain(n)%tile(t)%elev
 
-         !!------ This Block Is Where We Obtain Weather Forcing ------------------------------!!
-         ! retrieve forcing data from AC72_struc(n)%ac72(t) and assign to local variables
+      !!------ This Block Is Where We Obtain Weather Forcing ------------------------------!!
+      ! retrieve forcing data from AC72_struc(n)%ac72(t) and assign to local variables
 
-         ! PRES: Daily average surface pressure (kPa)
-         tmp_pres      = (AC72_struc(n)%ac72(t)%psurf / AC72_struc(n)%forc_count) / 1000
+      ! PRES: Daily average surface pressure (kPa)
+      tmp_pres      = (AC72_struc(n)%ac72(t)%psurf / AC72_struc(n)%forc_count) / 1000
 
-         ! PRECIP: Total daily precipitation (rain+snow) (mm)
-         tmp_precip    = (AC72_struc(n)%ac72(t)%prcp / AC72_struc(n)%forc_count) * 3600. * 24. !Convert from kg/ms2 to mm/d
+      ! PRECIP: Total daily precipitation (rain+snow) (mm)
+      tmp_precip    = (AC72_struc(n)%ac72(t)%prcp / AC72_struc(n)%forc_count) * 3600. * 24. !Convert from kg/ms2 to mm/d
 
-         ! TMAX: maximum daily air temperature (degC)
-         tmp_tmax      = AC72_struc(n)%ac72(t)%tmax - LIS_CONST_TKFRZ !Convert from K to C
+      ! TMAX: maximum daily air temperature (degC)
+      tmp_tmax      = AC72_struc(n)%ac72(t)%tmax - LIS_CONST_TKFRZ !Convert from K to C
 
-         ! TMIN: minimum daily air temperature (degC)
-         tmp_tmin      = AC72_struc(n)%ac72(t)%tmin - LIS_CONST_TKFRZ !Convert from K to C
+      ! TMIN: minimum daily air temperature (degC)
+      tmp_tmin      = AC72_struc(n)%ac72(t)%tmin - LIS_CONST_TKFRZ !Convert from K to C
 
-         ! TDEW: average daily dewpoint temperature (degC)
-         tmp_tdew      = (AC72_struc(n)%ac72(t)%tdew / AC72_struc(n)%forc_count) - LIS_CONST_TKFRZ !Convert from K to C
+      ! TDEW: average daily dewpoint temperature (degC)
+      tmp_tdew      = (AC72_struc(n)%ac72(t)%tdew / AC72_struc(n)%forc_count) - LIS_CONST_TKFRZ !Convert from K to C
 
-         ! SW_RAD: daily total incoming solar radiation (MJ/(m2d))
-         tmp_swrad     = (AC72_struc(n)%ac72(t)%swdown / AC72_struc(n)%forc_count) * 0.0864 !Convert from W/m2 to MJ/(m2d)
+      ! SW_RAD: daily total incoming solar radiation (MJ/(m2d))
+      tmp_swrad     = (AC72_struc(n)%ac72(t)%swdown / AC72_struc(n)%forc_count) * 0.0864 !Convert from W/m2 to MJ/(m2d)
 
-         ! Wind: daily average wind speed (m/s)
-         tmp_wind      = AC72_struc(n)%ac72(t)%wndspd / AC72_struc(n)%forc_count
+      ! Wind: daily average wind speed (m/s)
+      tmp_wind      = AC72_struc(n)%ac72(t)%wndspd / AC72_struc(n)%forc_count
 
-         ! check validity of PRES
-         if(tmp_pres .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable PRES in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of PRES
+      if(tmp_pres .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable PRES in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of PRECIP
-         if(tmp_precip .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable PRECIP in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of PRECIP
+      if(tmp_precip .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable PRECIP in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of TMAX
-         if(tmp_tmax .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable TMAX in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of TMAX
+      if(tmp_tmax .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable TMAX in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of TMIN
-         if(tmp_tmin .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable TMIN in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of TMIN
+      if(tmp_tmin .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable TMIN in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of TDEW
-         if(tmp_tdew .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable TDEW in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of TDEW
+      if(tmp_tdew .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable TDEW in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of SW_RAD
-         if(tmp_swrad .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable SW_RAD in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of SW_RAD
+      if(tmp_swrad .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable SW_RAD in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! check validity of WIND
-         if(tmp_wind .eq. LIS_rc%udef) then
-            write(LIS_logunit, *) "undefined value found for forcing variable WIND in AC72"
-            write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
-            call LIS_endrun()
-         endif
+      ! check validity of WIND
+      if(tmp_wind .eq. LIS_rc%udef) then
+         write(LIS_logunit, *) "undefined value found for forcing variable WIND in AC72"
+         write(LIS_logunit, *) "for tile ", t, "latitude = ", lat, "longitude = ", lon
+         call LIS_endrun()
+      endif
 
-         ! Call ETo subroutine
-         call ac72_ETo_calc(tmp_pres, tmp_tmax, tmp_tmin, tmp_tdew, &
-               tmp_wind, tmp_swrad, &
-               tmp_elev, lat, tmp_eto)
-         AC72_struc(n)%ac72(t)%eto = tmp_eto
+      ! Call ETo subroutine
+      call ac72_ETo_calc(tmp_pres, tmp_tmax, tmp_tmin, tmp_tdew, &
+            tmp_wind, tmp_swrad, &
+            tmp_elev, lat, tmp_eto)
+      AC72_struc(n)%ac72(t)%eto = tmp_eto
+
+      if (AC72_struc(n)%ac72(t)%valid_sim.eq.1) then ! prepare and run AquaCrop
 
          ! setting all global variables
          call SetRootZoneWC_Actual(AC72_struc(n)%ac72(t)%RootZoneWC_Actual)
@@ -787,6 +789,7 @@ subroutine AC72_main(n)
          ! Fixed var
          call SetOut3Prof(.true.) ! needed for correct rootzone sm
          call SetOutDaily(.true.)
+         call SetTemperatureFile("(External)") ! to provent writing to console
 
          call SetTminRun(AC72_struc(n)%ac72(t)%Tmin_record)
          call SetTmaxRun(AC72_struc(n)%ac72(t)%Tmax_record)
