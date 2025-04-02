@@ -28,7 +28,9 @@ subroutine AC72_writerst(n)
   use LIS_logMod, only     : LIS_logunit, LIS_getNextUnitNumber, &
        LIS_releaseUnitNumber , LIS_verify
   use LIS_timeMgrMod, only : LIS_isAlarmRinging
+#if (defined SPMD)
   use LIS_mpiMod
+#endif
 #if (defined USE_NETCDF3 || defined USE_NETCDF4)
   use netcdf
 #endif

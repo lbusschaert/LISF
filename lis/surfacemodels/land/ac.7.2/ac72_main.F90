@@ -469,7 +469,9 @@ subroutine AC72_main(n)
   use LIS_histDataMod
   use LIS_logMod, only     : LIS_logunit, LIS_endrun
   use LIS_timeMgrMod, only : LIS_isAlarmRinging
+#if (defined SPMD)
   use LIS_mpiMod
+#endif
 
   implicit none
 
