@@ -491,7 +491,6 @@ subroutine AC72_main(n)
 
   ! Initialization management
   integer              :: read_Trecord_flag, InitializeRun_flag
-  integer              :: irun_local
   integer              :: ierr
 
   real                 :: tmp_pres, tmp_precip, tmp_tmax, tmp_tmin   ! Weather Forcing
@@ -515,7 +514,6 @@ subroutine AC72_main(n)
   ! check AC72 alarm. If alarm is ring, run model.
   alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck) Then
-     irun_local = AC72_struc(n)%irun
      read_Trecord_flag = 0
      InitializeRun_flag = 0
 
@@ -533,6 +531,10 @@ subroutine AC72_main(n)
      if (read_Trecord_flag.eq.1) then
         ! Read T record of next sim period
         call ac72_read_Trecord(n)
+     endif
+
+     if (InitializeRun_flag.eq.1) then 
+         AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
      endif
 
      do t = 1, LIS_rc%npatch(n, LIS_rc%lsm_index)
@@ -870,7 +872,6 @@ subroutine AC72_main(n)
 
    !!! initialize run (year)
          if (InitializeRun_flag.eq.1) then !make it flex
-            AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
             call SetClimRecord_DataType(0_int8)
             call SetClimRecord_fromd(0)
             call SetClimRecord_fromdaynr(ProjectInput(1)%Simulation_DayNr1)
