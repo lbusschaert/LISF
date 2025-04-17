@@ -125,11 +125,14 @@ subroutine AC72_readcrd()
             call LIS_verify(rc, "AquaCrop.7.2 criterion search window length: not defined")
          else
             write(LIS_logunit, *)'[INFO] AC72 no temperature criterion for cropping start'
+            AC72_struc(n)%Temp_crit = .false.
          endif
       enddo
   else
       write(LIS_logunit, *)'[INFO] AC72 no temperature criterion for cropping start'
-      AC72_struc(n)%Temp_crit = .false.
+      do n=1, LIS_rc%nnest
+         AC72_struc(n)%Temp_crit = .false.
+      enddo
   endif
 
   ! Rainfall criterion
@@ -152,12 +155,15 @@ subroutine AC72_readcrd()
                call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%crit_window, rc=rc)
                call LIS_verify(rc, "AquaCrop.7.2 criterion search window length: not defined")
             else
+               AC72_struc(n)%Rainfall_crit = .false.
                write(LIS_logunit, *)'[INFO] AC72 no rainfall criterion for cropping start'
             endif
       enddo
   else
       write(LIS_logunit, *)'[INFO] AC72 no rainfall criterion for cropping start'
-      AC72_struc(n)%Rainfall_crit = .false.
+      do n=1, LIS_rc%nnest
+         AC72_struc(n)%Rainfall_crit = .false.
+      enddo
   endif
 
   ! PathNameSimul

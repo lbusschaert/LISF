@@ -488,7 +488,6 @@ subroutine AC72_main(n)
 
   ! Initialization management
   integer              :: read_Trecord_flag, InitializeRun_flag
-  integer              :: irun_local
   integer              :: ierr
 
   real                 :: tmp_pres, tmp_precip, tmp_tmax, tmp_tmin   ! Weather Forcing
@@ -516,7 +515,6 @@ subroutine AC72_main(n)
   ! check AC72 alarm. If alarm is ring, run model.
   alarmCheck = LIS_isAlarmRinging(LIS_rc, "AC72 model alarm")
   if (alarmCheck) Then
-     irun_local = AC72_struc(n)%irun
      read_Trecord_flag = 0
      InitializeRun_flag = 0
 
@@ -537,7 +535,7 @@ subroutine AC72_main(n)
      endif
 
      if (InitializeRun_flag.eq.1) then
-        ! Advace one run
+        ! Advance one run
         AC72_struc(n)%irun = AC72_struc(n)%irun + 1 ! Next irun
      endif
 
@@ -900,39 +898,36 @@ subroutine AC72_main(n)
                ! Search start and add it to sim 
                ! Define start sim (already done before)
                call LIS_get_julhr(1901,1,1,0,0,0,timerefjulhours)
-               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+               call LIS_get_julhr(LIS_rc%yr, AC72_struc(n)%Sim_AnnualStartMonth, &
                      AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
                time1days = (time1julhours - timerefjulhours)/24 + 1
-               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+               call LIS_get_julhr(LIS_rc%yr, AC72_struc(n)%Crop_AnnualStartMonth, &
                      AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
                time2days = (time1julhours - timerefjulhours)/24 + 1
                start_day_t = ac72_search_start_Temp(time1days,time2days,AC72_struc(n)%crit_window, &
                                                 AC72_struc(n)%Temp_crit_tmin, AC72_struc(n)%Temp_crit_days, &
                                                 AC72_struc(n)%Temp_crit_occurrence, AC72_struc(n)%ac72(t)%Tmin_record)
                call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', start_day_t)
-               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature criterion", start_day_t
            endif
 
            if (AC72_struc(n)%Rainfall_crit) then
                ! Search start and add it to sim 
                ! Define start sim (already done before)
                call LIS_get_julhr(1901,1,1,0,0,0,timerefjulhours)
-               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Sim_AnnualStartMonth, &
+               call LIS_get_julhr(LIS_rc%yr, AC72_struc(n)%Sim_AnnualStartMonth, &
                      AC72_struc(n)%Sim_AnnualStartDay,0,0,0,time1julhours)
                time1days = (time1julhours - timerefjulhours)/24 + 1
-               call LIS_get_julhr(LIS_rc%syr, AC72_struc(n)%Crop_AnnualStartMonth, &
+               call LIS_get_julhr(LIS_rc%yr, AC72_struc(n)%Crop_AnnualStartMonth, &
                      AC72_struc(n)%Crop_AnnualStartDay,0,0,0,time1julhours)
                time2days = (time1julhours - timerefjulhours)/24 + 1
                start_day_p = ac72_search_start_Rainfall(time1days,time2days,AC72_struc(n)%crit_window, &
                                                 AC72_struc(n)%Rainfall_crit_amount, AC72_struc(n)%Rainfall_crit_days, &
                                                 AC72_struc(n)%Rainfall_crit_occurrence, AC72_struc(n)%ac72(t)%pcp_record)
                call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', start_day_p)
-               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on rainfall criterion", start_day_p
            endif
 
            if (AC72_struc(n)%Temp_crit.and.AC72_struc(n)%Rainfall_crit) then
                call set_project_input(AC72_struc(n)%irun, 'Crop_Day1', max(start_day_t, start_day_t))
-               write(LIS_logunit,*) "[INFO] AC72: planting/sowing day based on temperature and rainfall criterion", max(start_day_t, start_day_t)
            endif
 
            ! Set Global variable to pass T record to AquaCrop
@@ -1181,7 +1176,7 @@ subroutine AC72_main(n)
 
         ! Check for end of simulation period
         ! (DayNri - 1 because DayNri is already for next day)
-        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr()) .and. AC72_struc(n)%InitializeRun.eq.0) then
+        if (((GetDayNri()-1) .eq. GetSimulation_ToDayNr())) then
            AC72_struc(n)%InitializeRun = 1 ! Next surface model run, initialize
            AC72_struc(n)%read_Trecord = 1 ! Next surface model run, read meteo record
         end if
