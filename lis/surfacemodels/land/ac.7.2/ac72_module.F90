@@ -95,6 +95,7 @@ module AC72_module
      integer            :: cycle_complete
      integer            :: valid_sim
      real               :: tbase
+        integer            :: HyIrr_count ! for hybrid irrigation option
      integer            :: daynri
      real               :: RootZoneWC_Actual
      real               :: RootZoneWC_FC

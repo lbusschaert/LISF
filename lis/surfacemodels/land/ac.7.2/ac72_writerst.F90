@@ -249,6 +249,7 @@ subroutine AC72_dump_restart(n, ftn, wformat)
   integer :: DayLastCut_ID
   integer :: DayNri_ID
   integer :: DaySubmerged_ID
+    integer :: HyIrr_count_ID
   integer :: Management_WeedDeltaRC_ID
   integer :: PreviousStressLevel_ID
   integer :: Simulation_DayAnaero_ID
@@ -595,6 +596,10 @@ subroutine AC72_dump_restart(n, ftn, wformat)
   call LIS_writeHeader_restart(ftn, n, dimID, DaySubmerged_ID, "DaySubmerged", &
        "DaySubmerged at last time step", &
        "-", vlevels=1, valid_min=-99999.0, valid_max=99999.0)
+    ! write the header for state variable HyIrr_count
+    call LIS_writeHeader_restart(ftn, n, dimID, HyIrr_count_ID, "HyIrr_count", &
+                            "HyIrr_count at last time step", &
+                            "-", vlevels=1, valid_min=-99999.0, valid_max=99999.0)
   ! write the header for state variable PreviousStressLevel
   call LIS_writeHeader_restart(ftn, n, dimID, PreviousStressLevel_ID, "PreviousStressLevel", &
        "PreviousStressLevel at last time step", &
@@ -974,6 +979,10 @@ subroutine AC72_dump_restart(n, ftn, wformat)
   ! DaySubmerged
   call LIS_writevar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%DaySubmerged, &
        varid=DaySubmerged_ID, dim=1, wformat=wformat)
+
+  ! HyIrr_count
+  call LIS_writevar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%HyIrr_count, &
+                         varid=HyIrr_count_ID, dim=1, wformat=wformat)
 
   ! PreviousStressLevel
   call LIS_writevar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%PreviousStressLevel, &

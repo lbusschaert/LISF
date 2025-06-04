@@ -412,6 +412,7 @@ subroutine AC72_main(n)
        SetHItimesAT2,&
        SetHItimesBEF,&
        SetIrriInfoRecord1,&
+       SetIrriInfoRecord1_DepthInfo,&
        SetIrriInfoRecord2,&
        SetIrriInterval,&
        SetLineNrEval,&
@@ -487,6 +488,7 @@ subroutine AC72_main(n)
   logical              :: alarmCheck
   integer              :: l
   integer              :: irr_record_flag, DNr ! for irri file management
+    integer              :: ens_n
   character(250)       :: TempStr
 
   ! Initialization management
@@ -944,9 +946,52 @@ subroutine AC72_main(n)
                endif
             endif
             ! End irrigation block
+
+                ! Hybrid irrigation (reset count to 1)
+                if (AC72_struc(n)%HyIrr) then
+                    AC72_struc(n)%ac72(t)%HyIrr_count = 1
+                endif
+
             AC72_struc(n)%InitializeRun = 0 ! Initialization done
             AC72_struc(n)%read_Trecord = 0
          end if
+
+            ! Hybrid irrigation method (HyIrr)
+            ! Overwrites IrriInfoRecord1_DepthInfo (read
+            ! from hybrid_irr.IRR)
+            if (AC72_struc(n)%HyIrr) then
+                ! Check if we are in irrigation period
+                if ((GetDayNri() >= AC72_struc(n)%HyIrr_start + GetCrop_Day1()) &
+                .and. (GetDayNri() <= GetCrop_DayN())) then
+                    if (LIS_rc%nensem(n).eq.1) then
+                        ens_n = 1
+                    else
+                        ! Find ensemble member and corresponding interval -> t - nens * floor((t-1)/nens)
+                        ens_n = t - LIS_rc%nensem(n) * floor((t-1)/real(LIS_rc%nensem(n)))
+                    endif
+                    ! Check if we need to irrigate
+                    if (AC72_struc(n)%ac72(t)%HyIrr_count.ge. &
+                        AC72_struc(n)%HyIrr_intervals(ens_n)) then
+                        ! Check if not too wet (based on calculate_irrigation in ac_modules)
+                        ! Check if rootzone > 0 (Zouz)
+                        if ((AC72_struc(n)%ac72(t)%RootingDepth.gt.0).and.&
+                            (AC72_struc(n)%ac72(t)%RootZoneWC_FC - AC72_struc(n)%ac72(t)%RootZoneWC_Actual) &
+                            .gt. ((AC72_struc(n)%HyIrr_upperRAW/100.) &
+                                * (AC72_struc(n)%ac72(t)%RootZoneWC_FC - AC72_struc(n)%ac72(t)%RootZoneWC_Thresh))) then
+                            call SetIrriInfoRecord1_DepthInfo(AC72_struc(n)%HyIrr_amount)
+                            AC72_struc(n)%ac72(t)%HyIrr_count = 0
+                        else
+                            call SetIrriInfoRecord1_DepthInfo(0)
+                        endif
+                    else
+                        call SetIrriInfoRecord1_DepthInfo(0) 
+                    endif
+                    ! Increase count for next day
+                    AC72_struc(n)%ac72(t)%HyIrr_count = AC72_struc(n)%ac72(t)%HyIrr_count + 1
+                else
+                    call SetIrriInfoRecord1_DepthInfo(0) 
+                endif
+            endif
 
          ! Run AC
          tmp_wpi = AC72_struc(n)%ac72(t)%WPi

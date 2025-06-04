@@ -112,54 +112,85 @@ subroutine AC72_readcrd()
      call LIS_verify(rc, "AquaCrop.7.2 input path: not defined")
   enddo
 
-  ! CO2_Filename
-  call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 CO2_Filename:", rc = rc)
-  do n=1, LIS_rc%nnest
-     call ESMF_ConfigGetAttribute(LIS_config, &
-          AC72_struc(n)%CO2_Filename, rc=rc)
-     call LIS_verify(rc, "AquaCrop.7.2 CO2_Filename: not defined")
-  enddo
-
-  ! Management_Filename
-  call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 Management_Filename:", rc = rc)
-  do n=1, LIS_rc%nnest
-     if (rc == 0) then
+    ! CO2_Filename
+    call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 CO2_Filename:", rc = rc)
+    do n=1, LIS_rc%nnest
         call ESMF_ConfigGetAttribute(LIS_config, &
-             AC72_struc(n)%Management_Filename, rc=rc)
-        ! change lis none to AquaCrop (None)
-        if ((AC72_struc(n)%Management_Filename .eq. 'none') .or. &
-             (AC72_struc(n)%Management_Filename .eq. 'None')) then
-           AC72_struc(n)%Management_Filename = '(None)'
+            AC72_struc(n)%CO2_Filename, rc=rc)
+        call LIS_verify(rc, "AquaCrop.7.2 CO2_Filename: not defined")
+    enddo
+ 
+    ! Management_Filename
+    call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 Management_Filename:", rc = rc)
+    do n=1, LIS_rc%nnest
+        if (rc == 0) then
+            call ESMF_ConfigGetAttribute(LIS_config, &
+                AC72_struc(n)%Management_Filename, rc=rc)
+             ! change lis none to AquaCrop (None)
+             if ((AC72_struc(n)%Management_Filename .eq. 'none') .or. &
+                 (AC72_struc(n)%Management_Filename .eq. 'None')) then
+                 AC72_struc(n)%Management_Filename = '(None)'
+             endif 
+        else
+            write(LIS_logunit, *)'[INFO] AC72 Management_Filename: not defined, default management'
+            AC72_struc(n)%Management_Filename = '(None)'
         endif
-     else
-        write(LIS_logunit, *)'[INFO] AC72 Management_Filename: not defined, default management'
-        AC72_struc(n)%Management_Filename = '(None)'
-     endif
-  enddo
-
-  ! Irrigation_Filename
-  call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 Irrigation_Filename:", rc = rc)
-  do n=1, LIS_rc%nnest
-     if (rc == 0) then
-        call ESMF_ConfigGetAttribute(LIS_config, &
-             AC72_struc(n)%Irrigation_Filename, rc=rc)
-        ! change lis none to AquaCrop (None)
-        if ((AC72_struc(n)%Irrigation_Filename .eq. 'none') .or. &
-             (AC72_struc(n)%Irrigation_Filename .eq. 'None')) then
-           AC72_struc(n)%Irrigation_Filename = '(None)'
+    enddo
+ 
+    ! Irrigation_Filename
+    call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 Irrigation_Filename:", rc = rc)
+    do n=1, LIS_rc%nnest
+        if (rc == 0) then
+            call ESMF_ConfigGetAttribute(LIS_config, &
+                 AC72_struc(n)%Irrigation_Filename, rc=rc)
+             ! change lis none to AquaCrop (None)
+             if ((AC72_struc(n)%Irrigation_Filename .eq. 'none') .or. &
+                 (AC72_struc(n)%Irrigation_Filename .eq. 'None')) then
+                 AC72_struc(n)%Irrigation_Filename = '(None)'
+             endif 
+        else
+            write(LIS_logunit, *)'[INFO] AC72 Irrigation_Filename: not defined, no irrigation'
+            AC72_struc(n)%Irrigation_Filename = '(None)'
         endif
-     else
-        write(LIS_logunit, *)'[INFO] AC72 Irrigation_Filename: not defined, no irrigation'
-        AC72_struc(n)%Irrigation_Filename = '(None)'
-     endif
-  enddo
+    enddo
 
-  ! AquaCrop model soil parameter table
-  call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 soil parameter table:", rc = rc)
-  do n=1, LIS_rc%nnest
-     call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%soil_tbl_name, rc=rc)
-     call LIS_verify(rc, "AquaCrop.7.2 soil parameter table: not defined")
-  enddo
+    ! Hybrid irrigation method
+    do n=1, LIS_rc%nnest
+        call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 hybrid irrigation:", rc = rc)
+        if (rc == 0) then
+            call ESMF_ConfigGetAttribute(LIS_config, &
+                AC72_struc(n)%HyIrr, rc=rc)
+            write(LIS_logunit, *)'[INFO] AC72 hybrid irrigation turned ON'
+        else
+            AC72_struc(n)%HyIrr = .false.
+        endif
+
+        ! read other options for hybrid irrigation method
+        if (AC72_struc(n)%HyIrr) then
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 start day irrigation (DAP):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_start, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 start day irrigation (DAP): not defined")
+            
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 fixed amount (mm):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_amount, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 fixed amount (mm): not defined")
+
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 upper threshold (%RAW depleted):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_upperRAW, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 upper threshold (%RAW depleted): not defined")
+
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 interval file:", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_intervalfile, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 interval file: not defined")
+        endif
+    enddo
+ 
+    ! AquaCrop model soil parameter table
+    call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 soil parameter table:", rc = rc)
+    do n=1, LIS_rc%nnest
+        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%soil_tbl_name, rc=rc)
+        call LIS_verify(rc, "AquaCrop.7.2 soil parameter table: not defined")
+    enddo
 
 
   ! soil classification scheme

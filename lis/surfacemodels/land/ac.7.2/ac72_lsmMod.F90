@@ -129,6 +129,16 @@ module AC72_lsmMod
      character(len=256) :: soil_scheme_name
      real               :: dt
 
+        !-------------------------------------------------------------------------
+        ! Hybrid irrigation method
+        !-------------------------------------------------------------------------
+        logical :: HyIrr
+        integer :: HyIrr_start
+        integer :: HyIrr_amount
+        integer :: HyIrr_upperRAW
+        character(len=256) :: HyIrr_intervalfile
+        real, pointer      :: HyIrr_intervals(:)
+
      character(len=LIS_CONST_PATH_LEN) :: PathNameOutp
      character(len=LIS_CONST_PATH_LEN) :: PathNameSimul
      character(len=LIS_CONST_PATH_LEN) :: PathNameList

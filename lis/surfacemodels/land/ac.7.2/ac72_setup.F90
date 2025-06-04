@@ -555,6 +555,7 @@ subroutine AC72_setup()
   integer           :: REW, descr
   integer           :: time1julhours, timerefjulhours
   integer           :: time1days, time2days
+  integer           :: ierr
 
   integer(intEnum) :: TheProjectType
 
@@ -728,6 +729,15 @@ subroutine AC72_setup()
 
      AC72_struc(n)%InitializeRun = 0 ! Make sure to set it to ...
      AC72_struc(n)%read_Trecord = 0 ! 0 for all procs
+
+     if (AC72_struc(n)%HyIrr) then
+           allocate(AC72_struc(n)%HyIrr_intervals(LIS_rc%nensem(n)))
+           ! Open interval file
+           open(19, FILE=trim(AC72_struc(n)%HyIrr_intervalfile),FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+           call LIS_verify(ierr,'AC72_setup.F: failure opening HyIrr interval file')
+           read(19,*) AC72_struc(n)%HyIrr_intervals
+           write(LIS_logunit, *) AC72_struc(n)%HyIrr_intervals
+     endif
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
@@ -1195,6 +1205,9 @@ subroutine AC72_setup()
          AC72_struc(n)%AC72(t)%StartMode = GetStartMode()
          AC72_struc(n)%AC72(t)%NrRuns = GetSimulation_NrRuns()
          AC72_struc(n)%AC72(t)%TheProjectType = TheProjectType
+
+                ! Hybrid irrigation (set it to 1 anyway)
+                AC72_struc(n)%ac72(t)%HyIrr_count = 1
 
          ! Check for irrigation (irrigation file management)
          if(AC72_struc(n)%ac72(t)%IrriMode.eq.IrriMode_Manual)then
