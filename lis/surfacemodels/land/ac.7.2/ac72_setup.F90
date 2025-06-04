@@ -562,7 +562,6 @@ subroutine AC72_setup()
 
         logical :: MultipleRunWithKeepSWC_temp    
         real    :: MultipleRunConstZrx_temp
-        !real     :: arr(366) 
 
         mtype = LIS_rc%lsm_index
 
@@ -718,6 +717,15 @@ subroutine AC72_setup()
 
             ! Read annual temperature record
             call ac72_read_Trecord(n)
+
+            if (AC72_struc(n)%HyIrr) then
+                allocate(AC72_struc(n)%HyIrr_intervals(LIS_rc%nensem(n)))
+                ! Open interval file
+                open(19, FILE=trim(AC72_struc(n)%HyIrr_intervalfile),FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+                call LIS_verify(ierr,'AC72_setup.F: failure opening HyIrr interval file')
+                read(19,*) AC72_struc(n)%HyIrr_intervals
+                write(LIS_logunit, *) AC72_struc(n)%HyIrr_intervals
+            endif
 
             do t = 1, LIS_rc%npatch(n, mtype)
                 
@@ -974,14 +982,6 @@ subroutine AC72_setup()
                 call SetTmin(AC72_struc(n)%ac72(t)%Tmin_record(1))    
                 call SetTmax(AC72_struc(n)%ac72(t)%Tmax_record(1))
 
-				!DEBUG
-                !arr = 10.
-                !call SetTminRun(arr)
-                !arr = 20.
-                !call SetTmaxRun(arr)
-                !call SetTmin(10.)    
-                !call SetTmax(20.)
-
                 ! Set Tmin and Tmax reference to compute the stress realtions
                 call SetTminTnxReference12MonthsRun(AC72_struc(n)%ac72(t)%tmincli_monthly(:))
                 call SetTmaxTnxReference12MonthsRun(AC72_struc(n)%ac72(t)%tmaxcli_monthly(:))
@@ -1184,6 +1184,9 @@ subroutine AC72_setup()
                 AC72_struc(n)%AC72(t)%StartMode = GetStartMode()
                 AC72_struc(n)%AC72(t)%NrRuns = GetSimulation_NrRuns()
                 AC72_struc(n)%AC72(t)%TheProjectType = TheProjectType
+
+                ! Hybrid irrigation (set it to 1 anyway)
+                AC72_struc(n)%ac72(t)%HyIrr_count = 1
 
                 ! Check for irrigation (irrigation file management)
                 if(AC72_struc(n)%ac72(t)%IrriMode.eq.IrriMode_Manual)then

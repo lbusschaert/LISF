@@ -148,6 +148,37 @@ subroutine AC72_readcrd()
             AC72_struc(n)%Irrigation_Filename = '(None)'
         endif
     enddo
+
+    ! Hybrid irrigation method
+    do n=1, LIS_rc%nnest
+        call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 hybrid irrigation:", rc = rc)
+        if (rc == 0) then
+            call ESMF_ConfigGetAttribute(LIS_config, &
+                AC72_struc(n)%HyIrr, rc=rc)
+            write(LIS_logunit, *)'[INFO] AC72 hybrid irrigation turned ON'
+        else
+            AC72_struc(n)%HyIrr = .false.
+        endif
+
+        ! read other options for hybrid irrigation method
+        if (AC72_struc(n)%HyIrr) then
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 start day irrigation (DAP):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_start, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 start day irrigation (DAP): not defined")
+            
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 fixed amount (mm):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_amount, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 fixed amount (mm): not defined")
+
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 upper threshold (%RAW depleted):", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_upperRAW, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 upper threshold (%RAW depleted): not defined")
+
+            call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 interval file:", rc = rc)
+            call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%HyIrr_intervalfile, rc=rc)
+            call LIS_verify(rc, "AquaCrop.7.2 interval file: not defined")
+        endif
+    enddo
  
     ! AquaCrop model soil parameter table
     call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 soil parameter table:", rc = rc)

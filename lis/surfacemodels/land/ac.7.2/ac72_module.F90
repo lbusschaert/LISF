@@ -91,6 +91,7 @@ module AC72_module
         ! AC specific (all AC global variables)
         !-------------------------------------------------------------------------
         real               :: cycle_complete
+        integer            :: HyIrr_count ! for hybrid irrigation option
         integer            :: daynri
         real               :: RootZoneWC_Actual
         real               :: RootZoneWC_FC

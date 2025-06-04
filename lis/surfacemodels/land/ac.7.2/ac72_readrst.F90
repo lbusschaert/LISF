@@ -415,6 +415,10 @@ subroutine AC72_readrst()
             call LIS_readvar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%DaySubmerged, &
                                     varname="DaySubmerged", wformat=wformat)
 
+            ! read: HyIrr_count
+            call LIS_readvar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%HyIrr_count, &
+                                    varname="HyIrr_count", wformat=wformat)
+
             ! read: PreviousStressLevel
             call LIS_readvar_restart(ftn, n, LIS_rc%lsm_index, AC72_struc(n)%ac72%PreviousStressLevel, &
                                     varname="PreviousStressLevel", wformat=wformat)
