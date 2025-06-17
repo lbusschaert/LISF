@@ -1006,20 +1006,6 @@ subroutine AC72_main(n)
                 endif
             endif
 
-        call SetCrop_SmaxTopQuarter(MAX(0.00001, 1.25*AC72_struc(n)%ac72(t)%CCiprev*GetCrop_KcTop()*&
-                AC72_struc(n)%ac72(t)%eto/1000/AC72_struc(n)%ac72(t)%RootingDepth))
-        call SetCrop_SmaxBotQuarter(MAX(0.00001, AC72_struc(n)%ac72(t)%CCiprev*GetCrop_KcTop()*&
-                AC72_struc(n)%ac72(t)%eto/1000/AC72_struc(n)%ac72(t)%RootingDepth))
-        Crop_SmaxTop_temp = GetCrop_SmaxTop()
-        Crop_SmaxBot_temp = GetCrop_SmaxBot()
-        !write(LIS_logunit, *) "GetCrop_SmaxBot()"
-        !write(LIS_logunit, *) GetCrop_SmaxBot()
-        call DeriveSmaxTopBottom(GetCrop_SmaxTopQuarter(), &
-                                 GetCrop_SmaxBotQuarter(), &
-                                 Crop_SmaxTop_temp, Crop_SmaxBot_temp)
-        call SetCrop_SmaxTop(Crop_SmaxTop_temp)
-        call SetCrop_SmaxBot(Crop_SmaxBot_temp)
-
          ! Run AC
          tmp_wpi = AC72_struc(n)%ac72(t)%WPi
          call AdvanceOneTimeStep(tmp_wpi, AC72_struc(n)%ac72(t)%HarvestNow)
