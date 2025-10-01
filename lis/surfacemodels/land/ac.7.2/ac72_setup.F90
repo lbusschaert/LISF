@@ -550,6 +550,7 @@ subroutine AC72_setup()
   integer           :: t, k, n, l
   integer           :: col, row
   real, allocatable :: placeholder(:,:)
+  real              :: arr(366)
 
   real              :: Z_surf, cl_tmp, si_tmp, sd_tmp, InfRate_tmp
   integer           :: REW, descr
@@ -720,7 +721,7 @@ subroutine AC72_setup()
      end do
 
      ! Read annual temperature record
-     call ac72_read_Trecord(n)
+     !call ac72_read_Trecord(n) ! This is the line that reads the forcings for the full year
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
@@ -972,10 +973,12 @@ subroutine AC72_setup()
         AC72_struc(n)%ac72(t)%WPi = 0.
 
         ! Set Global variable to pass T record to AquaCrop
-        call SetTminRun(AC72_struc(n)%ac72(t)%Tmin_record)
-        call SetTmaxRun(AC72_struc(n)%ac72(t)%Tmax_record)
-        call SetTmin(AC72_struc(n)%ac72(t)%Tmin_record(1))
-        call SetTmax(AC72_struc(n)%ac72(t)%Tmax_record(1))
+        arr = 10 ! set Tmin for everyday to 10 degC
+        call SetTminRun(arr)
+        arr = 20 ! set Tmax for everyday to 20 degC
+        call SetTmaxRun(arr)
+        call SetTmin(10)
+        call SetTmax(20)
 
         ! Set Tmin and Tmax reference to compute the stress realtions
         call SetTminTnxReference12MonthsRun(AC72_struc(n)%ac72(t)%tmincli_monthly(:))
