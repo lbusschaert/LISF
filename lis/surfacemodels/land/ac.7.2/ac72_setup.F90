@@ -977,8 +977,8 @@ subroutine AC72_setup()
         call SetTminRun(arr)
         arr = 20 ! set Tmax for everyday to 20 degC
         call SetTmaxRun(arr)
-        call SetTmin(10)
-        call SetTmax(20)
+        call SetTmin(10.)
+        call SetTmax(20.)
 
         ! Set Tmin and Tmax reference to compute the stress realtions
         call SetTminTnxReference12MonthsRun(AC72_struc(n)%ac72(t)%tmincli_monthly(:))
