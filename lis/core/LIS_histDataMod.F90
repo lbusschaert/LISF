@@ -1099,6 +1099,7 @@ module LIS_histDataMod
      integer       :: varId_opt2
      integer :: varId_max ! EMK
      integer :: varId_min ! EMK
+     integer :: varID_std
      integer       :: gribSF          ! GRIB scale factor
      integer       :: gribSfc         ! GRIB surface
      integer       :: gribLvl         ! GRIB level
