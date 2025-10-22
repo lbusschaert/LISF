@@ -8,6 +8,8 @@ use, intrinsic :: iso_c_binding, only: c_f_pointer, &
                                        c_loc, &
                                        c_null_char, &
                                        c_ptr
+use LIS_logMod, only     : LIS_logunit
+
 implicit none
 
 
@@ -90,42 +92,42 @@ end function int2str
 
 function roundc_int32(x, mold) result(y)
     !! Returns commercial rounds, following Pascal's banker's rules for rounding
+    implicit none
     real(sp), intent(in) :: x
-        !! Value to be rounded to an integer
     integer(int32), intent(in) :: mold
-        !! Integer determining the kind of the integer result
     integer(int32) :: y
     real(sp) :: x_clipped
+    real(sp), parameter :: safe_real_max = 1e8_sp
+    real(sp), parameter :: safe_real_min = -1e8_sp
 
-    ! Check if x is within the tolerated range for int32 before rounding
-    if (x > 2147483647._sp) then
-        x_clipped = 2147483647._sp
-    elseif (x < -2147483648._sp) then
-        x_clipped = -2147483648._sp
+    ! Clip and sanitize input to stay finite and within safe single-precision integer range
+    if (x > safe_real_max) then
+        x_clipped = safe_real_max
+    elseif (x < safe_real_min) then
+        x_clipped = safe_real_min
     else
         x_clipped = x
     end if
 
     ! Rounding logic based on x_clipped
-    if (abs(x_clipped - floor(x_clipped, kind=int32) - 0.5_sp) < epsilon(0._sp)) then
-       if (x_clipped > 0) then
-          if (mod(abs(trunc(x_clipped)),2) == 0) then
-              y = floor(x_clipped, kind=int32)
-          else
-              y = ceiling(x_clipped, kind=int32)
-          end if
-       else
-          if (mod(abs(trunc(x_clipped)),2) == 0) then
-              y = ceiling(x_clipped, kind=int32)
-          else
-              y = floor(x_clipped, kind=int32)
-          end if
-       end if
+    if (abs(x_clipped - floor(x_clipped) - 0.5_sp) < epsilon(0._sp)) then
+        if (x_clipped > 0.0_sp) then
+            if (mod(abs(int(trunc(x_clipped))), 2) == 0) then
+                y = int(floor(x_clipped), kind=int32)
+            else
+                y = int(ceiling(x_clipped), kind=int32)
+            end if
+        else
+            if (mod(abs(int(trunc(x_clipped))), 2) == 0) then
+                y = int(ceiling(x_clipped), kind=int32)
+            else
+                y = int(floor(x_clipped), kind=int32)
+            end if
+        end if
     else
-       ! Standard round for values not ending on 0.5
-       y = nint(x_clipped, kind=int32)
+        ! Standard round for values not ending on 0.5
+        y = int(nint(x_clipped), kind=int32)
     end if
-
 end function roundc_int32
 
 
@@ -138,12 +140,14 @@ function roundc_int8(x, mold) result(y)
         !! Integer determining the kind of the integer result
     integer(int8) :: y
     real(sp) :: x_clipped
+    real(sp), parameter :: safe_real_max = 1e8_sp
+    real(sp), parameter :: safe_real_min = -1e8_sp
 
-    ! Check if x is within the tolerated range for int8 before rounding
-    if (x > 127._sp) then
-        x_clipped = 127._sp
-    elseif (x < -128._sp) then
-        x_clipped = -128._sp
+    ! Clip and sanitize input to stay finite and within safe single-precision integer range
+    if (x > safe_real_max) then
+        x_clipped = safe_real_max
+    elseif (x < safe_real_min) then
+        x_clipped = safe_real_min
     else
         x_clipped = x
     end if
