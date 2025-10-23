@@ -3117,8 +3117,7 @@ contains
 !     writes a variable into a netcdf formatted file. 
 !   \end{description}
 !EOP    
-    integer       :: i,k,m,t,c
-    real, allocatable :: var(:), meanv(:), stdv(:)
+    integer       :: k,m,t
     integer       :: nmodel_status
 
     nmodel_status = 0
@@ -3196,46 +3195,14 @@ contains
                   trim(dataEntry%units)//')',&
                   dataEntry%form,nmodel_status,dim1=k)
           endif
-
+          ! Instantaneous stdev
           if( dataEntry%stdOpt.ne.0) then 
-             
-             allocate(var(LIS_rc%ntiles(n)))
-             allocate(meanv(LIS_rc%ngrid(n)))
-             allocate(stdv(LIS_rc%ngrid(n)))
-             
-             var(:) = dataEntry%modelOutput(1,:,k)
-             
-             meanv = 0                 
-             do i=1,LIS_rc%ntiles(n), LIS_rc%nensem(n)
-                c=LIS_domain(n)%tile(i)%index
-                do m=1, LIS_rc%nensem(n)
-                   t = i+m-1
-                   meanv(c) = meanv(c) + var(t)*LIS_domain(n)%tile(t)%fgrd*&
-                        LIS_domain(n)%tile(t)%pens
-                enddo
-             enddo
-             
-             stdv = 0                 
-             do i=1,LIS_rc%ntiles(n), LIS_rc%nensem(n)
-                c=LIS_domain(n)%tile(i)%index
-                do m=1,LIS_rc%nensem(n)
-                   t = i+m-1
-                   stdv(c) = stdv(c) + LIS_domain(n)%tile(t)%fgrd*&
-                        LIS_domain(n)%tile(t)%pens*&
-                        (var(t)-meanv(c))**2
-                enddo
-             enddo
-             stdv = sqrt(stdv)
-
              call LIS_writevar_netcdf(ftn,ftn_stats, n,&
-                  stdv,&
+                  dataEntry%std(:,k),&
                   dataEntry%varId_std, &
                   trim(dataEntry%short_name)//'_std ('//&
                   trim(dataEntry%units)//')',&
                   dataEntry%form,nmodel_status,dim1=k)
-             deallocate(var)
-             deallocate(meanv)
-             deallocate(stdv)
           endif
        enddo
     endif
