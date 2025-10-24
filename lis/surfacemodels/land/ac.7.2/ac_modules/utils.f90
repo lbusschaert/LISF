@@ -97,6 +97,8 @@ function roundc_int32(x, mold) result(y)
     integer(int32), intent(in) :: mold
     integer(int32) :: y
     real(sp) :: x_clipped
+
+    ! LB: safer checks and types for rounding (and avoiding float issues in LIS)
     real(sp), parameter :: safe_real_max = 1e8_sp
     real(sp), parameter :: safe_real_min = -1e8_sp
 
