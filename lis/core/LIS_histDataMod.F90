@@ -6582,7 +6582,7 @@ end subroutine get_moc_attributes
     character(len=20)       :: cfunit
 
     if(dataEntry%selectOpt.ne.0) then 
-       if(dataEntry%timeAvgOpt.eq.2) then 
+       if((dataEntry%timeAvgOpt.eq.2).or.(dataEntry%stdOpt.ne.0)) then 
           allocate(dataEntry%modelOutput(2,ntiles,dataEntry%vlevels))
        else
           allocate(dataEntry%modelOutput(1,ntiles,dataEntry%vlevels))
@@ -7040,7 +7040,7 @@ end subroutine LIS_diagnoseIrrigationOutputVar
           if(value.ne.LIS_rc%udef) then 
              ! accumulate values and record instantaneous values
              ! Instantaneous values are needed to compute the instantaneous std
-             if((dataEntry%timeAvgOpt.eq.2).or.(dataEntry%stdOpt /= 0)) then 
+             if((dataEntry%timeAvgOpt.eq.2).or.(dataEntry%stdOpt.ne.0)) then 
                 dataEntry%modelOutput(1,t,vlevel) = &
                      dataEntry%modelOutput(1,t,vlevel) + value
                 dataEntry%modelOutput(2,t,vlevel) = value
