@@ -1093,8 +1093,9 @@ module LIS_histDataMod
          and LIS_MOC_TAIRFORC_MAX.
 #endif
 
-   real, parameter :: LIS_MOC_MAX_NUM =  999999.0
-   real, parameter :: LIS_MOC_MIN_NUM = -999999.0
+   real, parameter :: LIS_MOC_MAX_NUM =  9999.0
+   real, parameter :: LIS_MOC_MIN_NUM = -9999.0
+   real, parameter :: LIS_MOC_STD_NUM = -9999.0
   
   type, public :: LIS_metadataEntry
      character(len=100) :: long_name
@@ -1113,6 +1114,7 @@ module LIS_histDataMod
      integer       :: varId_opt2
      integer :: varId_max ! EMK
      integer :: varId_min ! EMK
+     integer :: varID_std
      integer       :: gribSF          ! GRIB scale factor
      integer       :: gribSfc         ! GRIB surface
      integer       :: gribLvl         ! GRIB level
@@ -1132,6 +1134,7 @@ module LIS_histDataMod
      integer              :: diagFlag
      real, allocatable :: minimum(:,:) ! ntiles, vlevels
      real, allocatable :: maximum(:,:) ! ntiles, vlevels
+     real, allocatable :: std(:,:)
      real, allocatable :: modelOutput(:,:,:) !timeavg, ntiles, vlevels
 
      type(LIS_metadataEntry), pointer :: next
@@ -6708,6 +6711,11 @@ end subroutine get_moc_attributes
           dataEntry%minimum = LIS_MOC_MAX_NUM
           dataEntry%maximum = LIS_MOC_MIN_NUM
        endif
+       if(dataEntry%stdOpt.ne.0) then 
+          allocate(dataEntry%std(ntiles,dataEntry%vlevels))
+          ! Initialize the stdev fields to implausible values.
+          dataEntry%std = LIS_MOC_STD_NUM
+       endif
     endif
   end subroutine allocate_dataEntry
 
@@ -7085,6 +7093,7 @@ end subroutine LIS_diagnoseIrrigationOutputVar
     logical                 :: dir_status
     real                    :: mfactor
     real                    :: value
+    real                    :: mean_val, std_val, diff
        
     unit_status = .false.
     do i=1,dataEntry%nunits
@@ -7128,7 +7137,8 @@ end subroutine LIS_diagnoseIrrigationOutputVar
           endif
           if(value.ne.LIS_rc%udef) then 
              ! accumulate values and record instantaneous values
-             if(dataEntry%timeAvgOpt.eq.2) then 
+             ! Instantaneous values are needed to compute the instantaneous std
+             if((dataEntry%timeAvgOpt.eq.2).or.(dataEntry%stdOpt /= 0)) then 
                 dataEntry%modelOutput(1,t,vlevel) = &
                      dataEntry%modelOutput(1,t,vlevel) + value
                 dataEntry%modelOutput(2,t,vlevel) = value
@@ -7162,6 +7172,26 @@ end subroutine LIS_diagnoseIrrigationOutputVar
                       dataEntry%maximum(siblings(i),vlevel) = value
                    enddo
                 endif
+             endif
+
+             if ( dataEntry%stdOpt /= 0 ) then
+             ! Compute instantaneous standard deviation across siblings
+                mean_val = 0.0
+                do i = 1, nsiblings
+                     mean_val = mean_val + dataEntry%modelOutput(2, siblings(i), vlevel)
+                enddo
+                mean_val = mean_val / real(nsiblings)
+
+                std_val = 0.0
+                do i = 1, nsiblings
+                  diff = dataEntry%modelOutput(2, siblings(i), vlevel) - mean_val
+                  std_val = std_val + diff * diff
+                enddo
+                std_val = sqrt(max(0.0,std_val / real(nsiblings)))
+
+                do i = 1, nsiblings
+                   dataEntry%std(siblings(i), vlevel) = std_val
+                enddo
              endif
           endif
           dataEntry%diagflag = 1 
@@ -7383,6 +7413,9 @@ end subroutine LIS_diagnoseIrrigationOutputVar
       if ( dataEntry%minMaxOpt .ne. 0 ) then
          dataEntry%minimum = LIS_MOC_MAX_NUM
          dataEntry%maximum = LIS_MOC_MIN_NUM
+      endif
+      if ( dataEntry%stdOpt .ne. 0 ) then
+         dataEntry%std = LIS_MOC_STD_NUM
       endif
 
   end subroutine resetOutputVar
