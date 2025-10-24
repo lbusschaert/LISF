@@ -7039,7 +7039,8 @@ end subroutine LIS_diagnoseIrrigationOutputVar
           endif
           if(value.ne.LIS_rc%udef) then 
              ! accumulate values and record instantaneous values
-             if(dataEntry%timeAvgOpt.eq.2) then 
+             ! Instantaneous values are needed to compute the instantaneous std
+             if((dataEntry%timeAvgOpt.eq.2).or.(dataEntry%stdOpt /= 0)) then 
                 dataEntry%modelOutput(1,t,vlevel) = &
                      dataEntry%modelOutput(1,t,vlevel) + value
                 dataEntry%modelOutput(2,t,vlevel) = value
@@ -7079,13 +7080,13 @@ end subroutine LIS_diagnoseIrrigationOutputVar
              ! Compute instantaneous standard deviation across siblings
                 mean_val = 0.0
                 do i = 1, nsiblings
-                     mean_val = mean_val + dataEntry%modelOutput(t, siblings(i), vlevel)
+                     mean_val = mean_val + dataEntry%modelOutput(2, siblings(i), vlevel)
                 enddo
                 mean_val = mean_val / real(nsiblings)
 
                 std_val = 0.0
                 do i = 1, nsiblings
-                  diff = dataEntry%modelOutput(t, siblings(i), vlevel) - mean_val
+                  diff = dataEntry%modelOutput(2, siblings(i), vlevel) - mean_val
                   std_val = std_val + diff * diff
                 enddo
                 std_val = sqrt(max(0.0,std_val / real(nsiblings)))
