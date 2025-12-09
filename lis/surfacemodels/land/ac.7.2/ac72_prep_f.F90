@@ -220,7 +220,6 @@ contains
           subdaily_arr(:,j) = tmp
 
           if (AC72_struc(n)%Rainfall_crit) then
-            call LIS_perturb_forcing(n)
             ! Get and store rainfall (for sowing/planting based on rainfall criterion)
             call ESMF_StateGet(LIS_FORC_State(n), trim(LIS_FORC_Rainf%varname(1)), pcpField, rc=status)
             call LIS_verify(status, "AC72_f2t: error getting Rainf")
