@@ -176,7 +176,7 @@ subroutine AC72_readcrd()
         call LIS_verify(rc, "AquaCrop.7.2 fixed amount (mm): not defined")
 
         call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 irrigation perturbation file:", rc = rc)
-        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%irrpert_intervalfile, rc=rc)
+        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%irrpert_thresholdfile, rc=rc)
         call LIS_verify(rc, "AquaCrop.7.2 irrigation perturbation file: not defined")
      endif
   enddo
