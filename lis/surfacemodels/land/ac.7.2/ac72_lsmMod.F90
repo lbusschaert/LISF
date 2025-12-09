@@ -155,6 +155,17 @@ module AC72_lsmMod
      character(len=256) :: soil_scheme_name
      real               :: dt
 
+     !-------------------------------------------------------------------------
+     ! Irrigation threshold perturbation
+     !-------------------------------------------------------------------------
+     logical :: irrpert
+     integer :: irrpert_start
+     integer :: irrpert_amount
+     character(len=256) :: irrpert_thresholdfile
+     real, pointer      :: irrpert_thresholds(:)
+     ! End irrpert
+
+
      character(len=LIS_CONST_PATH_LEN) :: PathNameOutp
      character(len=LIS_CONST_PATH_LEN) :: PathNameSimul
      character(len=LIS_CONST_PATH_LEN) :: PathNameList

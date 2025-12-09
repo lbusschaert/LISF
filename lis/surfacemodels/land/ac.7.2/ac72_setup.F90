@@ -474,6 +474,9 @@ subroutine AC72_setup()
        SetHItimesAT2,&
        SetHItimesBEF,&
        SetIrriInfoRecord1,&
+       SetIrriInfoRecord1_DepthInfo,&
+       SetIrriInfoRecord1_FromDay,&
+       SetIrriInfoRecord1_TimeInfo,&
        SetIrriInfoRecord2,&
        SetIrriInterval,&
        SetLineNrEval,&
@@ -749,6 +752,15 @@ subroutine AC72_setup()
 
      ! Read annual temperature record
      call ac72_read_Trecord(n)
+
+     if ((AC72_struc(n)%irrpert).and.(LIS_rc%nensem(n).ge.2)) then
+           allocate(AC72_struc(n)%irrpert_thresholds(LIS_rc%nensem(n)))
+           ! Open interval file
+           open(19, FILE=trim(AC72_struc(n)%irrpert_thresholdfile),FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+           call LIS_verify(ierr,'AC72_setup.F: failure opening irrpert threshold file')
+           read(19,*) AC72_struc(n)%irrpert_thresholds
+           write(LIS_logunit, *) AC72_struc(n)%irrpert_thresholds
+     endif
 
      ! InitializeSimulation (year)
      AC72_struc(n)%irun = 1
@@ -1107,31 +1119,88 @@ subroutine AC72_setup()
          endif
          ! End variable CCx
 
-         ! InitializeRunPart1
-         if (AC72_struc(n)%variable_CCx .and. (LIS_rc%nensem(n) .gt. 2)) then
-            call InitializeRunPart1(int(AC72_struc(n)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType,&
-               AC72_struc(n)%variable_CCx,CCx_temp,CCx_range_temp,ens_n,LIS_rc%nensem(n))
-         else
-            call InitializeRunPart1(int(AC72_struc(n)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType,&
-               AC72_struc(n)%variable_CCx)
-         endif
-         call InitializeSimulationRunPart2()
-         ! Check if enough GDDays to complete cycle, if not, turn on flag to warn the user
-         AC72_struc(n)%AC72(t)%crop = GetCrop()
-         if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
-            if (((GetCrop_Day1()+GetCrop_DaysToHarvest()).gt.GetSimulation_ToDayNr()) &
-                  .or.(GetCrop_DaysToHarvest()<1)) then
-               AC72_struc(n)%ac72(t)%cycle_complete = 0
-            else
-               AC72_struc(n)%ac72(t)%cycle_complete = 1
+        ! Check if temperatures are high enough for crop production from Trecord
+        ! Get base temperature
+        frac_lower = real(count( ((AC72_struc(n)%ac72(t)%Tmin_record + AC72_struc(n)%ac72(t)%Tmin_record)/2. > &
+                              AC72_struc(n)%ac72(t)%tbase) )) / 366.
+
+        if (frac_lower.lt.0.1) then
+           AC72_struc(n)%ac72(t)%valid_sim = 0
+        else
+           AC72_struc(n)%ac72(t)%valid_sim = 1
+        endif
+
+        if (AC72_struc(n)%ac72(t)%valid_sim.eq.1) then
+        ! Initialize
+
+         ! Variable CCx
+         ! If the option is enabled in the lis configuration file, and there are at least 3 ensemble members,
+         ! this block will evenly spread the CCx values within the specified range around the CCx_config.
+         ! CGC and CDC are adapted to maintain the stages length consistent.
+         ! It has been built for a determinate crop in GDDs.
+         if ((AC72_struc(n)%variable_CCx) .and. (LIS_rc%nensem(n) .gt. 2)) then
+            ens_n = mod(t,LIS_rc%nensem(n))
+            if (ens_n == 0) then
+               ens_n = LIS_rc%nensem(n)
+            endif
+            call SetSimulation_LinkCropToSimPeriod(.true.)
+            call SetCropFile(ProjectInput(int(AC72_struc(n)%irun, kind=int8))%Crop_Filename)
+            call SetCropFilefull(ProjectInput(int(AC72_struc(n)%irun, kind=int8))%Crop_Directory // GetCropFile())
+            call LoadCrop(GetCropFilefull())
+            ! GDD setup only!
+            CCx_temp = AC72_struc(n)%CCx_config
+            CCx_range_temp = AC72_struc(n)%CCx_range
+            GDD_endgrowth_temp = log(GetCrop_CCx()/(0.08*GetCrop_CCo()))/GetCrop_GDDCGC()
+            ! Determinate crop only!
+            if (GDD_endgrowth_temp .gt. (GetCrop_GDDaysToFlowering()&
+                  + GetCrop_GDDLengthFlowering() / 2)) then
+               GDD_endgrowth_temp = GetCrop_GDDaysToFlowering() + GetCrop_GDDLengthFlowering() / 2
+            endif
+            CCi_final_temp = GetCrop_CCx() * (1 - 0.05 * (exp(3.33 * GetCrop_GDDCDC() / &
+               (GetCrop_CCx() + 2.29) * (GetCrop_GDDaysToHarvest() - GetCrop_GDDaysToSenescence())) - 1))
+            if ((GetCrop_CCx() + AC72_struc(n)%CCx_range .gt. 1) .or.&
+                  (GetCrop_CCx() - AC72_struc(n)%CCx_range .lt. GetCrop_CCo())) then
+               AC72_struc(n)%CCx_range = min(1 - GetCrop_CCx(), GetCrop_CCx() - GetCrop_CCo())
+            endif
+            if (ens_n .lt. LIS_rc%nensem(n)) then
+               call SetCrop_CCx(GetCrop_CCx() - AC72_struc(n)%CCx_range + &
+                  (ens_n - 1) * 2 * AC72_struc(n)%CCx_range / (LIS_rc%nensem(n) - 2))
+               call SetCrop_GDDCGC(log(GetCrop_CCx()/(0.08 * GetCrop_CCo())) / GDD_endgrowth_temp)
+               call SetCrop_GDDCDC((GetCrop_CCx() + 2.29) / (3.33 *&
+                  (GetCrop_GDDaysToHarvest() - GetCrop_GDDaysToSenescence())) *&
+                  log((1-CCi_final_temp/GetCrop_CCx())/0.05 + 1))
             endif
          endif
-         ! Close irrigation file after Run Initialization
-         ! Note: only 2 irrigation records can be passed
-         if((GetIrriMode().eq.IrriMode_Generate)&
-               .or.(GetIrriMode().eq.IrriMode_Manual)) then
-            call fIrri_close()
-         endif
+         ! End variable CCx
+
+        ! InitializeRunPart1
+        call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+        call InitializeSimulationRunPart2()
+        AC72_struc(n)%ac72(t)%InitializeRun = 0
+        AC72_struc(n)%ac72(t)%read_Trecord = 0
+        ! Check if enough GDDays to complete cycle, if not, turn on flag to warn the user
+        AC72_struc(n)%AC72(t)%crop = GetCrop()
+        if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
+           if (((GetCrop_Day1()+GetCrop_DaysToHarvest()).gt.GetSimulation_ToDayNr()) &
+                .or.(GetCrop_DaysToHarvest()<1)) then
+              AC72_struc(n)%ac72(t)%cycle_complete = 0
+           else
+              AC72_struc(n)%ac72(t)%cycle_complete = 1
+           endif
+        endif
+        ! Close irrigation file after Run Initialization
+        ! Note: only 2 irrigation records can be passed
+        if((GetIrriMode().eq.IrriMode_Generate)&
+             .or.(GetIrriMode().eq.IrriMode_Manual)) then
+           call fIrri_close()
+        endif
+
+       if ((AC72_struc(n)%irrpert) .and. (LIS_rc%nensem(n) .ge. 2)) then
+         ens_n = mod(t-1, LIS_rc%nensem(n)) + 1
+         call SetIrriInfoRecord1_TimeInfo(AC72_struc(n)%irrpert_thresholds(ens_n)) ! %depleted RAW
+         call SetIrriInfoRecord1_FromDay(AC72_struc(n)%irrpert_start) ! start DAP
+         call SetIrriInfoRecord1_DepthInfo(AC72_struc(n)%irrpert_amount) ! fixed amount (mm)
+       endif
 
          ! Set AC72_struc after Initialization
          AC72_struc(n)%AC72(t)%RootZoneWC_Actual = GetRootZoneWC_Actual()
