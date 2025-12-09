@@ -456,6 +456,8 @@ subroutine AC72_setup()
        SetHItimesAT2,&
        SetHItimesBEF,&
        SetIrriInfoRecord1,&
+       SetIrriInfoRecord1_DepthInfo,&
+       SetIrriInfoRecord1_FromDay,&
        SetIrriInfoRecord1_TimeInfo,&
        SetIrriInfoRecord2,&
        SetIrriInterval,&
@@ -1021,7 +1023,9 @@ subroutine AC72_setup()
 
        if ((AC72_struc(n)%irrpert) .and. (LIS_rc%nensem(n) .ge. 2)) then
          ens_n = mod(t-1, LIS_rc%nensem(n)) + 1
-         call SetIrriInfoRecord1_TimeInfo(AC72_struc(n)%irrpert_thresholds(ens_n))
+         call SetIrriInfoRecord1_TimeInfo(AC72_struc(n)%irrpert_thresholds(ens_n)) ! %depleted RAW
+         call SetIrriInfoRecord1_FromDay(AC72_struc(n)%irrpert_start) ! start DAP
+         call SetIrriInfoRecord1_DepthInfo(AC72_struc(n)%irrpert_amount) ! fixed amount (mm)
        endif
 
         ! Set AC72_struc after Initialization
