@@ -411,6 +411,7 @@ subroutine AC72_main(n)
        SetHItimesAT2,&
        SetHItimesBEF,&
        SetIrriInfoRecord1,&
+       SetIrriInfoRecord1_TimeInfo,&
        SetIrriInfoRecord2,&
        SetIrriInterval,&
        SetLineNrEval,&
@@ -484,6 +485,7 @@ subroutine AC72_main(n)
   integer              :: l
   integer              :: irr_record_flag, DNr ! for irri file management
   character(250)       :: TempStr
+  integer              :: ens_n
 
   real                 :: tmp_pres, tmp_precip, tmp_tmax, tmp_tmin   ! Weather Forcing
   real                 :: tmp_tdew, tmp_swrad, tmp_wind, tmp_eto     ! Weather Forcing
@@ -914,6 +916,10 @@ subroutine AC72_main(n)
               else ! no irrigation, set to 0
                  AC72_struc(n)%ac72(t)%irri_lnr = 0
               endif
+           endif
+           if ((AC72_struc(n)%irrpert) .and. (LIS_rc%nensem(n) .ge. 2)) then
+              ens_n = mod(t-1, LIS_rc%nensem(n)) + 1
+              call SetIrriInfoRecord1_TimeInfo(AC72_struc(n)%irrpert_thresholds(ens_n))
            endif
            ! End irrigation block
            AC72_struc(n)%ac72(t)%InitializeRun = 0 ! Initialization done

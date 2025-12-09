@@ -456,6 +456,7 @@ subroutine AC72_setup()
        SetHItimesAT2,&
        SetHItimesBEF,&
        SetIrriInfoRecord1,&
+       SetIrriInfoRecord1_TimeInfo,&
        SetIrriInfoRecord2,&
        SetIrriInterval,&
        SetLineNrEval,&
@@ -563,6 +564,8 @@ subroutine AC72_setup()
 
   logical :: MultipleRunWithKeepSWC_temp
   real    :: MultipleRunConstZrx_temp
+
+  integer :: ens_n
 
   external :: ac72_read_croptype
   external :: ac72_read_multilevel_param
@@ -721,6 +724,15 @@ subroutine AC72_setup()
 
      ! Read annual temperature record
      call ac72_read_Trecord(n)
+
+     if ((AC72_struc(n)%irrpert).and.(LIS_rc%nensem(n).ge.2)) then
+           allocate(AC72_struc(n)%irrpert_thresholds(LIS_rc%nensem(n)))
+           ! Open interval file
+           open(19, FILE=trim(AC72_struc(n)%irrpert_thresholdfile),FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+           call LIS_verify(ierr,'AC72_setup.F: failure opening irrpert threshold file')
+           read(19,*) AC72_struc(n)%irrpert_thresholds
+           write(LIS_logunit, *) AC72_struc(n)%irrpert_thresholds
+     endif
 
      do t = 1, LIS_rc%npatch(n, mtype)
 
@@ -1006,6 +1018,11 @@ subroutine AC72_setup()
              .or.(GetIrriMode().eq.IrriMode_Manual)) then
            call fIrri_close()
         endif
+
+       if ((AC72_struc(n)%irrpert) .and. (LIS_rc%nensem(n) .ge. 2)) then
+         ens_n = mod(t-1, LIS_rc%nensem(n)) + 1
+         call SetIrriInfoRecord1_TimeInfo(AC72_struc(n)%irrpert_thresholds(ens_n))
+       endif
 
         ! Set AC72_struc after Initialization
         AC72_struc(n)%AC72(t)%RootZoneWC_Actual = GetRootZoneWC_Actual()

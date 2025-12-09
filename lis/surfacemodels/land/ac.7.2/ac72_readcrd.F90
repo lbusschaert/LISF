@@ -154,6 +154,33 @@ subroutine AC72_readcrd()
      endif
   enddo
 
+  ! Perturb irrigation
+  do n=1, LIS_rc%nnest
+     call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 perturb irrigation:", rc = rc)
+     if (rc == 0) then
+        call ESMF_ConfigGetAttribute(LIS_config, &
+              AC72_struc(n)%irrpert, rc=rc)
+        write(LIS_logunit, *)'[INFO] AC72 perturb irrigation turned ON'
+     else
+        AC72_struc(n)%irrpert = .false.
+     endif
+
+     ! read other options for irrigation perturbation
+     if (AC72_struc(n)%irrpert) then
+        call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 start day irrigation (DAP):", rc = rc)
+        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%irrpert_start, rc=rc)
+        call LIS_verify(rc, "AquaCrop.7.2 start day irrigation (DAP): not defined")
+      
+        call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 fixed amount (mm):", rc = rc)
+        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%irrpert_amount, rc=rc)
+        call LIS_verify(rc, "AquaCrop.7.2 fixed amount (mm): not defined")
+
+        call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 irrigation perturbation file:", rc = rc)
+        call ESMF_ConfigGetAttribute(LIS_config, AC72_struc(n)%irrpert_intervalfile, rc=rc)
+        call LIS_verify(rc, "AquaCrop.7.2 irrigation perturbation file: not defined")
+     endif
+  enddo
+
   ! AquaCrop model soil parameter table
   call ESMF_ConfigFindLabel(LIS_config, "AquaCrop.7.2 soil parameter table:", rc = rc)
   do n=1, LIS_rc%nnest
