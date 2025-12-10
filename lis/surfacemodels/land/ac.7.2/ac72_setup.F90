@@ -579,6 +579,8 @@ subroutine AC72_setup()
   integer           :: time1days, time2days
   integer           :: start_day_t, start_day_p
 
+  integer           :: ierr
+
   integer(intEnum) :: TheProjectType
 
   logical ::  ProgramParametersAvailable
