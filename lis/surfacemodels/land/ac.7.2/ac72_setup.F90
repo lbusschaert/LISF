@@ -1067,20 +1067,6 @@ subroutine AC72_setup()
         call SetTnxReferenceYear(AC72_struc(n)%tempcli_refyr)
         call SetTnxReferenceFile('(External)')
 
-        ! Check if temperatures are high enough for crop production from Trecord
-        ! Get base temperature
-        frac_lower = real(count( ((AC72_struc(n)%ac72(t)%Tmin_record + AC72_struc(n)%ac72(t)%Tmin_record)/2. > &
-                              AC72_struc(n)%ac72(t)%tbase) )) / 366.
-
-        if (frac_lower.lt.0.1) then
-           AC72_struc(n)%ac72(t)%valid_sim = 0
-        else
-           AC72_struc(n)%ac72(t)%valid_sim = 1
-        endif
-
-        if (AC72_struc(n)%ac72(t)%valid_sim.eq.1) then
-        ! Initialize
-
          ! Variable CCx
          ! If the option is enabled in the lis configuration file, and there are at least 3 ensemble members,
          ! this block will evenly spread the CCx values within the specified range around the CCx_config.
@@ -1176,10 +1162,10 @@ subroutine AC72_setup()
          ! End variable CCx
 
         ! InitializeRunPart1
-        call InitializeRunPart1(int(AC72_struc(n)%ac72(t)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
+        call InitializeRunPart1(int(AC72_struc(n)%irun, kind=int8), AC72_struc(n)%ac72(t)%TheProjectType)
         call InitializeSimulationRunPart2()
-        AC72_struc(n)%ac72(t)%InitializeRun = 0
-        AC72_struc(n)%ac72(t)%read_Trecord = 0
+        AC72_struc(n)%InitializeRun = 0
+        AC72_struc(n)%read_Trecord = 0
         ! Check if enough GDDays to complete cycle, if not, turn on flag to warn the user
         AC72_struc(n)%AC72(t)%crop = GetCrop()
         if(GetCrop_ModeCycle().eq.ModeCycle_GDDays)then
