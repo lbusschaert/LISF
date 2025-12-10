@@ -132,7 +132,7 @@ module AC72_lsmMod
      integer :: irrpert_start
      integer :: irrpert_amount
      character(len=256) :: irrpert_thresholdfile
-     real, pointer      :: irrpert_thresholds(:)
+     integer, pointer      :: irrpert_thresholds(:)
      ! End irrpert
 
 
