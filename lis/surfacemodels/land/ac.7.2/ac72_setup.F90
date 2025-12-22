@@ -666,6 +666,7 @@ subroutine AC72_setup()
                  tmp = placeholder(col, row) + (lapse * &
                        (LIS_domain(n)%tile(t)%elev &
                        - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + 2))
+                 write(LIS_logunit, *) placeholder(col,row), LIS_domain(n)%tile(t)%elev, LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index), tmp
               else
                  tmp = placeholder(col, row)
               endif
