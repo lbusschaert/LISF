@@ -541,7 +541,7 @@ subroutine AC72_setup()
                             ac72_search_start_Rainfall
 
   use LIS_constantsMod, only: LIS_CONST_TKFRZ
-  use LIS_coreMod,   only: LIS_rc, LIS_surface
+  use LIS_coreMod,   only: LIS_rc, LIS_surface, LIS_domain
   use LIS_fileIOMod, only: LIS_read_param
   use LIS_logMod,    only: LIS_logunit, LIS_verify, LIS_endrun
   use LIS_timeMgrMod, only: LIS_get_julhr
@@ -570,7 +570,7 @@ subroutine AC72_setup()
   implicit none
 
   integer           :: mtype
-  integer           :: t, k, n, l
+  integer           :: t, k, n, l, m
   integer           :: col, row
   real, allocatable :: placeholder(:,:)
 
@@ -662,7 +662,7 @@ subroutine AC72_setup()
               row = LIS_surface(n, mtype)%tile(t)%row
 
               ! Apply lapse-rate correction if turned on
-              if (LIS_rc%met_ecor_parms(m) == "lapse-rate") then
+              if (LIS_rc%met_ecor(m) == "lapse-rate") then
                  tmp = placeholder(col, row) + (lapse * &
                        (LIS_domain(n)%tile(t)%elev &
                        - LIS_forc(n,m)%modelelev))
@@ -683,7 +683,7 @@ subroutine AC72_setup()
               row = LIS_surface(n, mtype)%tile(t)%row
 
               ! Apply lapse-rate correction if turned on
-              if (LIS_rc%met_ecor_parms(m) == "lapse-rate") then
+              if (LIS_rc%met_ecor(m) == "lapse-rate") then
                  tmp = placeholder(col, row) + (lapse * &
                        (LIS_domain(n)%tile(t)%elev &
                        - LIS_forc(n,m)%modelelev))
