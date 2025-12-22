@@ -665,7 +665,7 @@ subroutine AC72_setup()
               if (LIS_rc%met_ecor(m) == "lapse-rate") then
                  tmp = placeholder(col, row) + (lapse * &
                        (LIS_domain(n)%tile(t)%elev &
-                       - LIS_forc(n,m)%modelelev))
+                       - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index)))
               else
                  tmp = placeholder(col, row)
               endif
@@ -686,7 +686,7 @@ subroutine AC72_setup()
               if (LIS_rc%met_ecor(m) == "lapse-rate") then
                  tmp = placeholder(col, row) + (lapse * &
                        (LIS_domain(n)%tile(t)%elev &
-                       - LIS_forc(n,m)%modelelev))
+                       - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index)))
               else
                  tmp = placeholder(col, row)
               endif
