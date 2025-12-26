@@ -597,6 +597,7 @@ subroutine AC72_setup()
   real    :: CCi_final_temp
   integer :: ens_n
   real    :: tmp
+  real    :: elevdiff
   real, parameter :: lapse = -0.0065
 
   external :: ac72_read_croptype
@@ -661,21 +662,29 @@ subroutine AC72_setup()
               col = LIS_surface(n, mtype)%tile(t)%col
               row = LIS_surface(n, mtype)%tile(t)%row
 
-              ! Apply lapse-rate correction if turned on (to 2 m above surface)
-              if (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index).ne.-9999.) then
+              if (placeholder(col, row).ne.-9999.) then ! take only valid T for overlay
+                 ! Apply lapse-rate correction if turned on (to 2 m above surface)
                  if (LIS_rc%met_ecor(m) == "lapse-rate") then
-                    tmp = placeholder(col, row) + (lapse * &
-                          (LIS_domain(n)%tile(t)%elev &
-                          - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + 2))
-                 write(LIS_logunit, *) placeholder(col,row), LIS_domain(n)%tile(t)%elev, LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index), tmp
+                    if (LIS_rc%metforc(m) == "MERRA2") then
+                       if (merra2_struc(n)%uselml == 0) then
+                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
+                          - (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) - 8)
+                       else
+                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
+                          - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index)
+                       endif
+                    else ! e.g. ERA5
+                       elevdiff = LIS_domain(n)%tile(t)%elev &
+                       - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + 2
+                    endif                    
+                    tmp = placeholder(col, row) + (lapse * elevdiff) ! apply lapse-rate corr
                  else
                     tmp = placeholder(col, row)
                  endif
-              else
-                 tmp = -9999.
-              endif
-              ! Climatology is rounded to 2 decimals in AquaCrop and converted to degree Celsius
-              AC72_struc(n)%ac72(t)%tmincli_monthly(k) = anint(tmp*100)/100 - LIS_CONST_TKFRZ
+                 write(LIS_logunit, *) placeholder(col,row), LIS_domain(n)%tile(t)%elev, LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index), tmp
+                 ! Climatology is rounded to 2 decimals in AquaCrop and converted to degree Celsius
+                 AC72_struc(n)%ac72(t)%tmincli_monthly(k) = anint(tmp*100)/100 - LIS_CONST_TKFRZ
+              endif ! if T not valid, not stored
            enddo
         enddo
 
