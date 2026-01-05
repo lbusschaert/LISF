@@ -598,7 +598,7 @@ subroutine AC72_setup()
   real    :: CCi_final_temp
   integer :: ens_n
   real    :: tmp
-  real    :: elevdiff
+  real    :: elevdiff, forchgt
   real, parameter :: lapse = -0.0065
 
   external :: ac72_read_croptype
@@ -649,12 +649,34 @@ subroutine AC72_setup()
      endif
 
      ! Read and correct climatology
-     do m = 1, LIS_rc%nmetforc ! loop over met forcing sources (only works with overlay is m > 1)
-        if (trim(LIS_rc%metforc_blend_alg).ne."overlay") then
-           write(LIS_logunit,*) "[ERR] AC72 only runs with overlay option for the met forcing blending."
+     ! Tmin and Tmax are computed directly from the forcing input files
+     if (trim(LIS_rc%metforc_blend_alg).ne."overlay") then
+        write(LIS_logunit,*) "[ERR] AC72 only runs with overlay option for the met forcing blending."
+        write(LIS_logunit,*) "[ERR] Program stopping ..."
+        call LIS_endrun
+     endif
+
+     do m = 1, LIS_rc%nmetforc ! loop over met forcing sources
+        ! Check if using valid source (ERA5 or MERRA2 uselml=0 and use2mwind=1)
+        ! Define forchgt. Since it only runs with overlay, it keep the last forcing height value
+        if (LIS_rc%metforc(m) == "MERRA2") then
+           if ((merra2_struc(n)%uselml == 0).and.(merra2_struc(n)%use2mwind == 1)) then
+              AC72_struc(n)%forchgt = 2
+           else
+              write(LIS_logunit,*) "[ERR] AC72 only runs with MERRA2 2m fields"
+              write(LIS_logunit,*) "[ERR] Program stopping ..."
+              call LIS_endrun
+           endif
+        elseif (LIS_rc%metforc(m) == "ERA5") then
+           AC72_struc(n)%forchgt = 10
+        else
+           write(LIS_logunit,*) "[ERR] AC72 only runs with the following met forcings: ERA5, MERRA2"
            write(LIS_logunit,*) "[ERR] Program stopping ..."
            call LIS_endrun
         endif
+     enddo
+
+     do m = 1, LIS_rc%nmetforc ! loop over met forcing sources (only works with overlay if m > 1)
         write(LIS_logunit,*) "[INFO] AC72: reading parameter AC_Tmin_clim_"//trim(LIS_rc%metforc(m))//" from ",&
                                 trim(LIS_rc%paramfile(n))
         do k = 1, 12
@@ -664,23 +686,15 @@ subroutine AC72_setup()
               row = LIS_surface(n, mtype)%tile(t)%row
 
               if (placeholder(col, row).ne.LIS_rc%udef) then ! take only valid T for overlay
-                 ! Apply lapse-rate correction if turned on (to 2 m above surface)
+                 ! Apply lapse-rate correction if turned on (to 2 m above surface from forchgt)
                  if (LIS_rc%met_ecor(m) == "lapse-rate") then
-                    if (LIS_rc%metforc(m) == "MERRA2") then
-                       if (merra2_struc(n)%uselml == 0) then
-                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
-                          - (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) - 8)
-                       else
-                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
-                          - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index)
-                       endif
-                    else ! e.g. ERA5
-                       elevdiff = LIS_domain(n)%tile(t)%elev &
-                       - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + 2
-                    endif                    
+                    elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
+                    - (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + forchgt)                   
                     tmp = placeholder(col, row) + (lapse * elevdiff) ! apply lapse-rate corr
                  else
-                    tmp = placeholder(col, row)
+                    write(LIS_logunit,*) "[ERR] AC72 only runs with lapse-rate correction turned ON."
+                    write(LIS_logunit,*) "[ERR] Program stopping ..."
+                    call LIS_endrun
                  endif
                  write(LIS_logunit, *) placeholder(col,row), LIS_domain(n)%tile(t)%elev, LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index), tmp
                  ! Climatology is rounded to 2 decimals in AquaCrop and converted to degree Celsius
@@ -698,26 +712,18 @@ subroutine AC72_setup()
               row = LIS_surface(n, mtype)%tile(t)%row
 
               if (placeholder(col, row).ne.LIS_rc%udef) then ! take only valid T for overlay
-                 ! Apply lapse-rate correction if turned on (to 2 m above surface)
+                 ! Apply lapse-rate correction if turned on (to 2 m above surface from forchgt)
                  if (LIS_rc%met_ecor(m) == "lapse-rate") then
-                    if (LIS_rc%metforc(m) == "MERRA2") then
-                       if (merra2_struc(n)%uselml == 0) then
-                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
-                          - (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) - 8)
-                       else
-                          elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
-                          - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index)
-                       endif
-                    else ! e.g. ERA5
-                       elevdiff = LIS_domain(n)%tile(t)%elev &
-                       - LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + 2
-                    endif                    
+                    elevdiff = (LIS_domain(n)%tile(t)%elev + 2) &
+                    - (LIS_forc(n,m)%modelelev(LIS_domain(n)%tile(t)%index) + forchgt)                   
                     tmp = placeholder(col, row) + (lapse * elevdiff) ! apply lapse-rate corr
                  else
-                    tmp = placeholder(col, row)
+                    write(LIS_logunit,*) "[ERR] AC72 only runs with lapse-rate correction turned ON."
+                    write(LIS_logunit,*) "[ERR] Program stopping ..."
+                    call LIS_endrun
                  endif
                  ! Climatology is rounded to 2 decimals in AquaCrop and converted to degree Celsius
-                 AC72_struc(n)%ac72(t)%tmaxcli_monthly(k) = anint(tmp*100)/100 - LIS_CONST_TKFRZ
+                 AC72_struc(n)%ac72(t)%tmincli_monthly(k) = anint(tmp*100)/100 - LIS_CONST_TKFRZ
               endif ! if T not valid, not stored
            enddo
         enddo

@@ -147,6 +147,7 @@ contains
     type(forcpertdec), allocatable :: forcPert_saved(:)
     integer               :: i, j, k, t, status, met_ts, m, tid
     integer               :: yr_start
+    real, parameter :: lapse = -0.0065
 
     ! Near Surface Air Temperature [K]
     type(ESMF_Field)  :: tmpField
@@ -246,6 +247,9 @@ contains
 
     deallocate(subdaily_arr)
 
+    ! lapse-rate correct the temperature records
+    daily_tmax_arr(:,:) = daily_tmax_arr(:,:) + (lapse * (2 -AC72_struc(n)%forchgt))
+    daily_tmin_arr(:,:) = daily_tmin_arr(:,:) + (lapse * (2 -AC72_struc(n)%forchgt))
     ! Assign Tmax and Tmin arrays to AC72_struc
     do t=1,LIS_rc%npatch(n,LIS_rc%lsm_index)
        tid = LIS_surface(n, LIS_rc%lsm_index)%tile(t)%tile_id
