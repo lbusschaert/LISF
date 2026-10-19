@@ -169,6 +169,14 @@ contains
     call registerlsmparamprocwritedata(trim(LDT_ac72Id)//char(0),&
          AquaCropParms_writeData)
 
+    ! AquaCrop 7.4 LSM:
+    call registerlsmparamprocinit(trim(LDT_ac74Id)//char(0),&
+         AquaCropParms_init)
+    call registerlsmparamprocwriteheader(trim(LDT_ac74Id)//char(0),&
+         AquaCropParms_writeHeader)
+    call registerlsmparamprocwritedata(trim(LDT_ac74Id)//char(0),&
+         AquaCropParms_writeData)
+
     ! CLSM F2.5 LSM:
     call registerlsmparamprocinit(trim(LDT_clsmf25Id)//char(0),&
          catchmentParms_init)

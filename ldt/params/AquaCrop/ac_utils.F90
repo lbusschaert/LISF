@@ -24,30 +24,43 @@ contains
 
 
   function roundc_int32(x, mold) result(y)
-    !! Returns commercial rounds, following Pascal's banker's rules for rounding
-    real(sp), intent(in) :: x
-    !! Value to be rounded to an integer
-    integer(int32), intent(in) :: mold
-    !! Integer determining the kind of the integer result
-    integer(int32) :: y
+      !! Returns commercial rounds, following Pascal's banker's rules for rounding
+      real(sp), intent(in) :: x
+          !! Value to be rounded to an integer
+      integer(int32), intent(in) :: mold
+          !! Integer determining the kind of the integer result
+      integer(int32) :: y
+      real(sp) :: x_clipped
 
-    if (abs(x - floor(x, kind=int32) - 0.5) < epsilon(0.)) then
-       if (x > 0) then
-          if (mod(abs(trunc(x)),2) == 0) then
-             y = floor(x, kind=int32)
-          else
-             y = ceiling(x, kind=int32)
-          end if
-       else
-          if (mod(abs(trunc(x)),2) == 0) then
-             y = ceiling(x, kind=int32)
-          else
-             y = floor(x, kind=int32)
-          end if
-       end if
-    else !standard round for values not ending on 0.5
-       y = nint(x, kind=int32)
-    end if
+      ! Check if x is within the tolerated range for int32 before rounding
+      if (x > 2147483647._sp) then
+          x_clipped = 2147483647._sp
+      elseif (x < -2147483648._sp) then
+          x_clipped = -2147483648._sp
+      else
+          x_clipped = x
+      end if
+
+      ! Rounding logic based on x_clipped
+      if (abs(x_clipped - floor(x_clipped, kind=int32) - 0.5_sp) < epsilon(0._sp)) then
+         if (x_clipped > 0) then
+            if (mod(abs(trunc(x_clipped)),2) == 0) then
+                y = floor(x_clipped, kind=int32)
+            else
+                y = ceiling(x_clipped, kind=int32)
+            end if
+         else
+            if (mod(abs(trunc(x_clipped)),2) == 0) then
+                y = ceiling(x_clipped, kind=int32)
+            else
+                y = floor(x_clipped, kind=int32)
+            end if
+         end if
+      else
+         ! Standard round for values not ending on 0.5
+         y = nint(x_clipped, kind=int32)
+      end if
+
   end function roundc_int32
 
 

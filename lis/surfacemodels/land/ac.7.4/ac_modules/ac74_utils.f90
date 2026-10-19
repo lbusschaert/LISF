@@ -1,0 +1,422 @@
+module ac74_utils
+!! A place for various small utilities.
+
+use ac74_kinds, only: sp, &
+                    int8, &
+                    int32
+use, intrinsic :: iso_c_binding, only: c_f_pointer, &
+                                       c_loc, &
+                                       c_null_char, &
+                                       c_ptr
+use, intrinsic :: iso_fortran_env, only: error_unit
+implicit none
+
+
+logical :: warning_log_open = .false.
+    !! whether warnings are also written to a report file
+integer :: warning_log_unit
+    !! unit of that file (open(newunit=...) units are negative, hence the flag)
+
+abstract interface
+    subroutine message_handler(message)
+        character(len=*), intent(in) :: message
+    end subroutine message_handler
+end interface
+
+procedure(message_handler), pointer :: warning_handler => null()
+    !! when set by a driver (e.g. LIS), it receives the warnings instead
+procedure(message_handler), pointer :: fatal_handler => null()
+    !! when set by a driver, it receives the errors and stops the driver
+
+
+interface roundc
+    module procedure roundc_int8
+    module procedure roundc_int32
+end interface roundc
+
+
+contains
+
+
+subroutine assert(condition, message)
+    !! Prints an error message if the condition is not met,
+    !! and then shuts down the whole program.
+    logical, intent(in) :: condition
+    character(len=*), intent(in) :: message
+    if (.not. condition) then
+        if (associated(fatal_handler)) call fatal_handler(message)
+        print *, 'ABORT: ', message
+        stop 1
+    end if
+end subroutine assert
+
+
+subroutine warn(message)
+    !! Prints a warning on the terminal (standard error) and carries on.
+    !! Standard error is not buffered, so the warning is shown even when the
+    !! program stops right after it. If a report file is registered with
+    !! set_warning_log (ListProjectsLoaded.OUT in the standalone program), the
+    !! warning is written there too, so every warning leaves a trace.
+    !! A driver can take the warnings over with set_warning_handler.
+    character(len=*), intent(in) :: message
+
+    if (associated(warning_handler)) then
+        call warning_handler(message)
+        return
+    end if
+    write(error_unit, '(2a)') 'WARNING: ', message
+    if (warning_log_open) then
+        write(warning_log_unit, '(2a)') 'WARNING: ', message
+    end if
+end subroutine warn
+
+
+subroutine fatal(message)
+    !! Reports an error that AquaCrop cannot carry on from, on the terminal and
+    !! in the report file (see warn), and stops the program with exit code 1.
+    !! Use it where the program would otherwise hang or crash without saying why.
+    !! A driver can take the errors over with set_fatal_handler, e.g. to stop
+    !! all its MPI processes; the handler is not expected to return.
+    character(len=*), intent(in) :: message
+
+    if (associated(fatal_handler)) call fatal_handler(message)
+    write(error_unit, '(2a)') 'ERROR: ', message
+    if (warning_log_open) then
+        write(warning_log_unit, '(2a)') 'ERROR: ', message
+    end if
+    stop 1
+end subroutine fatal
+
+
+subroutine set_warning_handler(handler)
+    !! From now on, give the warnings to this routine of the driver.
+    procedure(message_handler) :: handler
+
+    warning_handler => handler
+end subroutine set_warning_handler
+
+
+subroutine set_fatal_handler(handler)
+    !! From now on, give the errors to this routine of the driver.
+    procedure(message_handler) :: handler
+
+    fatal_handler => handler
+end subroutine set_fatal_handler
+
+
+subroutine set_warning_log(unit)
+    !! From now on, also write warnings to the file opened on this unit.
+    integer, intent(in) :: unit
+
+    warning_log_unit = unit
+    warning_log_open = .true.
+end subroutine set_warning_log
+
+
+subroutine unset_warning_log()
+    !! Stop writing warnings to a file (call before closing it).
+    warning_log_open = .false.
+end subroutine unset_warning_log
+
+
+function GetAquaCropDescription() result(str)
+    !! Returns a string with the aquacrop version and release date.
+    character(len=:), allocatable :: str
+
+    str = 'AquaCrop ' // GetVersionString() // ' (' // GetReleaseDate() // ')'
+end function GetAquaCropDescription
+
+
+function GetAquaCropDescriptionWithTimeStamp() result(str)
+    !! Same as GetAquaCropDescription(), but with a time stamp.
+    character(len=:), allocatable :: str
+    character(len=10) :: datestr
+    character(len=8)  :: timestr
+
+    integer, dimension(8) :: d
+
+    call date_and_time(values=d)
+
+    WRITE(datestr,10)d(3),d(2),d(1)
+    WRITE(timestr,8)d(5),d(6),d(7)
+ 10 FORMAT(I2.2, '-', I2.2, '-', I4.4)
+ 8  FORMAT(I2.2, ':', I2.2, ':', I2.2)
+    str = GetAquaCropDescription() // ' - Output created on (date) : ' // &
+          datestr // '   at (time) : ' // timestr
+    
+end function GetAquaCropDescriptionWithTimeStamp
+
+
+function GetReleaseDate() result(str)
+    !! Returns a string containing the month and year of the release.
+    character(len=:), allocatable :: str
+
+    str = 'September 2026'
+end function GetReleaseDate
+
+
+function GetVersionString() result(str)
+    !! Returns a string containing the version number (major+minor).
+    character(len=:), allocatable :: str
+
+    str = '7.3'
+end function GetVersionString
+
+
+function int2str(num) result(str)
+    !! Converts an integer into a string.
+    integer, intent(in) :: num
+    character(len=:), allocatable :: str
+
+    character(len=128) :: tmp
+
+    write(tmp, '(i0)') num
+    str = trim(tmp)
+end function int2str
+
+
+function roundc_int32(x, mold) result(y)
+    !! Returns commercial rounds, following Pascal's banker's rules for rounding
+    real(sp), intent(in) :: x
+        !! Value to be rounded to an integer
+    integer(int32), intent(in) :: mold
+        !! Integer determining the kind of the integer result
+    integer(int32) :: y
+    real(sp) :: x_clipped
+
+    ! Check if x is within the tolerated range for int32 before rounding
+    if (x > 2147483647._sp) then
+        x_clipped = 2147483647._sp
+    elseif (x < -2147483648._sp) then
+        x_clipped = -2147483648._sp
+    else
+        x_clipped = x
+    end if
+
+    ! Rounding logic based on x_clipped
+    if (abs(x_clipped - floor(x_clipped, kind=int32) - 0.5_sp) < epsilon(0._sp)) then
+       if (x_clipped > 0) then
+          if (mod(abs(trunc(x_clipped)),2) == 0) then
+              y = floor(x_clipped, kind=int32)
+          else
+              y = ceiling(x_clipped, kind=int32)
+          end if
+       else
+          if (mod(abs(trunc(x_clipped)),2) == 0) then
+              y = ceiling(x_clipped, kind=int32)
+          else
+              y = floor(x_clipped, kind=int32)
+          end if
+       end if
+    else
+       ! Standard round for values not ending on 0.5
+       y = nint(x_clipped, kind=int32)
+    end if
+
+end function roundc_int32
+
+
+
+function roundc_int8(x, mold) result(y)
+    !! Returns commercial rounds, following Pascal's banker's rules for rounding
+    real(sp), intent(in) :: x
+        !! Value to be rounded to an integer
+    integer(int8), intent(in) :: mold
+        !! Integer determining the kind of the integer result
+    integer(int8) :: y
+    real(sp) :: x_clipped
+
+    ! Check if x is within the tolerated range for int8 before rounding
+    if (x > 127._sp) then
+        x_clipped = 127._sp
+    elseif (x < -128._sp) then
+        x_clipped = -128._sp
+    else
+        x_clipped = x
+    end if
+
+    ! Rounding logic based on x_clipped
+    if (abs(x_clipped - floor(x_clipped, kind=int32) - 0.5_sp) < epsilon(0._sp)) then
+       if (x_clipped > 0) then
+          if (mod(abs(trunc(x_clipped)),2) == 0) then
+             y = floor(x_clipped, kind=int8)
+          else
+             y = ceiling(x_clipped, kind=int8)
+          end if
+       else
+          if (mod(abs(trunc(x_clipped)),2) == 0) then
+             y = ceiling(x_clipped, kind=int8)
+          else
+             y = floor(x_clipped, kind=int8)
+          end if
+       end if
+    else
+       ! Standard round for values not ending on 0.5
+       y = nint(x_clipped, kind=int8)
+    end if
+
+end function roundc_int8
+
+
+function trunc(x) result(y)
+    !! Returns the integer part of x, which is always smaller than (or equal to) x
+    !! in absolute value.
+    real(sp), intent(in) :: x
+    integer(int32) :: y
+
+    if (x > 0) then
+        y = floor(x, kind=int32)
+    else
+        y = ceiling(x, kind=int32)
+    end if
+end function trunc
+
+
+subroutine upper_case(str)
+    !! Converts a string to upper case.
+    !!
+    !! Adapted from https://fortranwiki.org/fortran/show/m_strings.
+    character(len=*), intent(inout) :: str
+
+    integer :: i
+
+    do i = 1, len(str)
+        select case(str(i:i))
+        case("a":"z")
+            str(i:i) = achar(iachar(str(i:i)) - 32)
+        end select
+    end do
+end subroutine upper_case
+
+
+function pointer2string(c_pointer, strlen) result(string)
+    !! Returns a Fortran string from a C-pointer plus the string length.
+    type(c_ptr), intent(in) :: c_pointer
+        !! C-style pointer
+    integer(int32), intent(in) :: strlen
+        !! Length of the string
+    character(len=strlen) :: string
+
+    character, pointer, dimension(:) :: f_pointer
+    integer :: i
+
+    call c_f_pointer(c_pointer, f_pointer, [strlen])
+
+    do i = 1, strlen
+        string(i:i) = f_pointer(i)
+    end do
+end function pointer2string
+
+
+function string2pointer(string) result(c_pointer)
+    !! Returns a C-pointer from a Fortran string.
+    character(len=*), intent(in) :: string
+    type(c_ptr) :: c_pointer
+
+    character(len=:), allocatable, target, save :: f_string
+
+    f_string = string // c_null_char
+    c_pointer = c_loc(f_string)
+end function string2pointer
+
+
+subroutine twostrings2twopointers(string1, string2, c_pointer1, c_pointer2)
+    !! Returns two C-pointers for two Fortran strings.
+    character(len=*), intent(in) :: string1
+    character(len=*), intent(in) :: string2
+    type(c_ptr), intent(inout) :: c_pointer1
+    type(c_ptr), intent(inout) :: c_pointer2
+
+    character(len=:), allocatable, target, save :: f_string1
+    character(len=:), allocatable, target, save :: f_string2
+
+    f_string1 = string1 // c_null_char
+    c_pointer1 = c_loc(f_string1)
+
+    f_string2 = string2 // c_null_char
+    c_pointer2 = c_loc(f_string2)
+end subroutine twostrings2twopointers
+
+
+subroutine threestrings2threepointers(string1, string2, string3, &
+                                    c_pointer1, c_pointer2, c_pointer3)
+    !! Returns three C-pointers for three Fortran strings.
+    character(len=*), intent(in) :: string1
+    character(len=*), intent(in) :: string2
+    character(len=*), intent(in) :: string3
+    type(c_ptr), intent(inout) :: c_pointer1
+    type(c_ptr), intent(inout) :: c_pointer2
+    type(c_ptr), intent(inout) :: c_pointer3
+
+    character(len=:), allocatable, target, save :: f_string1
+    character(len=:), allocatable, target, save :: f_string2
+    character(len=:), allocatable, target, save :: f_string3
+
+    f_string1 = string1 // c_null_char
+    c_pointer1 = c_loc(f_string1)
+
+    f_string2 = string2 // c_null_char
+    c_pointer2 = c_loc(f_string2)
+
+    f_string3 = string3 // c_null_char
+    c_pointer3 = c_loc(f_string3)
+end subroutine threestrings2threepointers
+
+
+subroutine write_file(fhandle, line, advance, iostat)
+    !! Writes one line to a file.
+    integer, intent(in) :: fhandle
+        !! file handle of an already-opened file
+    character(len=*), intent(in) :: line
+        !! line to write to the file
+    logical, intent(in) :: advance
+        !! whether or not to append a newline character
+    integer, intent(out) :: iostat
+        !! IO status returned by write()
+
+    character(len=:), allocatable :: advance_str
+
+    if (advance) then
+        advance_str = 'yes'
+    else
+        advance_str = 'no'
+    end if
+
+    write(fhandle, '(a)', advance=advance_str, iostat=iostat) line
+end subroutine write_file
+
+
+subroutine open_file(fhandle, filename, mode, iostat)
+    !! Opens a file in the given mode.
+    integer, intent(out) :: fhandle
+        !! file handle to be used for the open file
+    character(len=*), intent(in) :: filename
+        !! name of the file to assign the file handle to
+    character, intent(in) :: mode
+        !! open the file for reading ('r'), writing ('w') or appending ('a')
+    integer, intent(out) :: iostat
+        !! IO status returned by open()
+
+    logical :: file_exists
+
+    inquire(file=filename, exist=file_exists)
+
+    if (mode == 'r') then
+        open(newunit=fhandle, file=trim(filename), status='old', &
+             action='read', iostat=iostat)
+    elseif (mode == 'a') then
+        if (file_exists) then
+            open(newunit=fhandle, file=trim(filename), status='old', &
+                 position='append', action='write', iostat=iostat)
+        else
+            open(newunit=fhandle, file=trim(filename), status='new', &
+                 action='write', iostat=iostat)
+        end if
+    elseif (mode == 'w') then
+        open(newunit=fhandle, file=trim(filename), status='replace', &
+             action='write', iostat=iostat)
+    end if
+end subroutine open_file
+
+
+end module ac74_utils

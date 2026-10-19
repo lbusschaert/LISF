@@ -450,6 +450,9 @@ module LIS_histDataMod
   public :: LIS_MOC_AC_StExp
   public :: LIS_MOC_AC_StSen
   public :: LIS_MOC_AC_cycle_complete
+  public :: LIS_MOC_AC_SeasonYield
+  public :: LIS_MOC_AC_SeasonNr
+  public :: LIS_MOC_AC_CropActive
   ! end AquaCrop
  
   ! RUC 
@@ -981,6 +984,9 @@ module LIS_histDataMod
    integer :: LIS_MOC_AC_StExp  = -9999
    integer :: LIS_MOC_AC_StSen  = -9999
    integer :: LIS_MOC_AC_cycle_complete  = -9999
+   integer :: LIS_MOC_AC_SeasonYield  = -9999
+   integer :: LIS_MOC_AC_SeasonNr  = -9999
+   integer :: LIS_MOC_AC_CropActive  = -9999
 
 !   <- RUC -> 
    integer :: LIS_MOC_QVG = -9999
@@ -4744,6 +4750,42 @@ contains
          "GDD crop growth cycle completed",rc)
     if ( rc == 1 ) then
        call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC_cycle_complete,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC_SeasonYield:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC_SeasonYield",&
+         "season_yield",&
+         "yield of the last completed season",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC_SeasonYield,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"t/ha"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC_SeasonNr:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC_SeasonNr",&
+         "season_number",&
+         "number of completed seasons",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC_SeasonNr,&
+            LIS_histData(n)%head_lsm_list,&
+            n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
+            model_patch=.true.)
+    endif
+
+    call ESMF_ConfigFindLabel(modelSpecConfig,"AC_CropActive:",rc=rc)
+    call get_moc_attributes(modelSpecConfig, LIS_histData(n)%head_lsm_list, &
+         "AC_CropActive",&
+         "crop_active",&
+         "crop sown or planted (1), or fallow (0)",rc)
+    if ( rc == 1 ) then
+       call register_dataEntry(LIS_MOC_LSM_COUNT,LIS_MOC_AC_CropActive,&
             LIS_histData(n)%head_lsm_list,&
             n,1,ntiles,(/"-"/),1,(/"-"/),1,1,1,&
             model_patch=.true.)

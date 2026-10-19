@@ -218,6 +218,7 @@ module LDT_pluginIndices
   character*50, public,  parameter :: LDT_noahmp50Id    = "Noah-MP.5.0"
   character*50, public,  parameter :: LDT_noahmp52Id    = "Noah-MP.5.2"
   character*50, public,  parameter :: LDT_ac72Id        = "AquaCrop.7.2"
+  character*50, public,  parameter :: LDT_ac74Id        = "AquaCrop.7.4"
   character*50, public,  parameter :: LDT_clm2Id        = "CLM.2"
   character*50, public,  parameter :: LDT_clm45Id       = "CLM.4.5"
   character*50, public,  parameter :: LDT_vic411Id      = "VIC.4.1.1"

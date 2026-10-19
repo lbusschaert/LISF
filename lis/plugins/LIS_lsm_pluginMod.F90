@@ -245,6 +245,10 @@ contains
     use ac72_lsmMod, only : ac72_ini
 #endif
 
+#if ( defined SM_AC_7_4 )
+    use ac74_lsmMod, only : ac74_ini
+#endif
+
     external :: registerlsminit
     external :: registerlsmsetup
     external :: registerlsmf2t
@@ -561,6 +565,16 @@ contains
     external ac72_f2t
     external ac72_writerst
     external ac72_finalize
+#endif
+
+#if ( defined SM_AC_7_4 )
+    external ac74_main
+    external ac74_setup
+    external ac74_readrst
+    external ac74_dynsetup
+    external ac74_f2t
+    external ac74_writerst
+    external ac74_finalize
 #endif
 
 #if ( defined SM_LSM_TEMPLATE )
@@ -1038,6 +1052,26 @@ contains
     call registerlsmdynsetup(trim(LIS_ac72Id)//char(0),ac72_dynsetup)
     call registerlsmwrst(trim(LIS_ac72Id)//char(0),ac72_writerst)
     call registerlsmfinalize(trim(LIS_ac72Id)//char(0),ac72_finalize)
+#endif
+
+#if ( defined SM_AC_7_4 )
+    call registerlsminit(trim(LIS_ac74Id)//char(0),ac74_ini)
+    call registerlsmsetup(trim(LIS_ac74Id)//char(0),ac74_setup)
+    call registerlsmf2t(trim(LIS_ac74Id)//"+"//trim(LIS_retroId)//char(0),&
+         ac74_f2t)
+    call registerlsmf2t(trim(LIS_ac74Id)//"+"//trim(LIS_nuopccplId)//char(0),&
+         ac74_f2t)
+    call registerlsmf2t(trim(LIS_ac74Id)//"+"//&
+         trim(LIS_smootherDAId)//char(0), ac74_f2t)
+    call registerlsmf2t(trim(LIS_ac74Id)//"+"//&
+         trim(LIS_agrmetrunId)//char(0),ac74_f2t)
+    call registerlsmf2t(trim(LIS_ac74Id)//"+"//&
+         trim(LIS_forecastrunId)//char(0),ac74_f2t)
+    call registerlsmrun(trim(LIS_ac74Id)//char(0),ac74_main)
+    call registerlsmrestart(trim(LIS_ac74Id)//char(0),ac74_readrst)
+    call registerlsmdynsetup(trim(LIS_ac74Id)//char(0),ac74_dynsetup)
+    call registerlsmwrst(trim(LIS_ac74Id)//char(0),ac74_writerst)
+    call registerlsmfinalize(trim(LIS_ac74Id)//char(0),ac74_finalize)
 #endif
 
   end subroutine LIS_lsm_plugin

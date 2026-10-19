@@ -455,5 +455,8 @@ AC_Yield:              1  t/ha  -  1 0 0 1 153 1000 # yield (ton/ha)
 AC_StExp:              1  %     -  1 0 0 1 153 1000 # expansion stress (%)
 AC_StSen:              1  %     -  1 0 0 1 153 1000 # senescence stress (%)
 AC_cycle_complete:     1  -     -  1 0 0 1 153 1000 # Flag cycle completed within sim
+AC_SeasonYield:        1  t/ha  -  1 0 0 1 153 1000 # yield of the last completed season (t/ha)
+AC_SeasonNr:           1  -     -  1 0 0 1 153 1000 # number of completed seasons (-)
+AC_CropActive:         1  -     -  1 0 0 1 153 1000 # crop sown or planted (1), or fallow (0)
 ....
 

@@ -40,7 +40,7 @@ subroutine define_AC_compartments(n, array)
   real, allocatable :: depths(:)
   real, allocatable :: rootingd(:)
   real, allocatable :: csizes(:,:)
-  real              :: TotalDepthL, TotDepthC, DeltaZ, fAdd
+  real              :: TotalDepthL, TotDepthC, DeltaZ, fAdd, CropZx_eff
   character(len=LDT_CONST_PATH_LEN)    :: dir
   character(len=LDT_CONST_PATH_LEN)    :: cropinv_file, crop_file
   character(100)    :: header1, str1
@@ -120,15 +120,17 @@ subroutine define_AC_compartments(n, array)
   end do
   call LDT_releaseUnitNumber(ftn)
 
-  ! calculate the compartment sizes for each crop type
-  ! Max 12 compartments and by default 10 cm each
+  ! Compartment sizes for each crop type, as in AquaCrop v7.4: keep
+  ! identical to DetermineNrandThicknessCompartments, the call of
+  ! AdjustSizeCompartments in LoadSimulationRunProject, and
+  ! AdjustSizeCompartments (global.f90).
+  ! As in LIS: no restrictive soil layer, default thickness 0.10 m.
+  ! Max 12 compartments; unused compartments are 0.
   allocate(csizes(num_types,12))
+  csizes = 0.
 
   do ct = 1, num_types
-     ! Adjust number of compartments based on the soil profile
-     ! depth
-     ! (based on DetermineNrandThicknessCompartments from global.f90)
-     ! Does not use rootingd
+     ! 1. compartments of the soil profile (DetermineNrandThicknessCompartments)
      TotalDepthL = 0.
      do i = 1, AquaCrop_struc(n)%nlayers
         TotalDepthL = TotalDepthL + AquaCrop_struc(n)%lthickness(i)
@@ -148,30 +150,26 @@ subroutine define_AC_compartments(n, array)
              .or. (abs(TotDepthC - TotalDepthL) < 0.0001)) exit loop
      end do loop
 
-     ! AquaCrop procedure to adjust the size of the compartments 
-     ! (based on AdjustSizeCompartments in global.f90)
-     ! Requires rootingd
+     ! 2. only for roots deeper than the compartments (LoadSimulationRunProject)
+     if (roundc(rootingd(ct)*1000., mold=1) <= roundc(TotDepthC*1000., mold=1)) cycle
 
-     ! Calculate new depth of compartments
-     TotDepthC = 0.
-     do i = 1, nrcomp
-        TotDepthC = TotDepthC + csizes(ct,i)
-     enddo
-
+     ! 3. more compartments, up to the rooting depth (AdjustSizeCompartments)
+     CropZx_eff = rootingd(ct) + 0.000001
      if (nrcomp < 12) then
         loop_bis: do
            nrcomp = nrcomp + 1
-           if ((rootingd(ct) - TotDepthC) > 0.10) then
+           if ((CropZx_eff - TotDepthC) > 0.10) then
               csizes(ct,nrcomp) = 0.10
            else
-              csizes(ct,nrcomp) = rootingd(ct) - TotDepthC
+              csizes(ct,nrcomp) = CropZx_eff - TotDepthC
            end if
            TotDepthC = TotDepthC + csizes(ct,nrcomp)
            if ((nrcomp == 12) &
-                .or. ((TotDepthC + 0.00001) >= rootingd(ct))) exit loop_bis
+                .or. ((TotDepthC + 0.00001) >= CropZx_eff)) exit loop_bis
         end do loop_bis
      end if
 
+     ! 4. larger compartments if 12 are not deep enough (AdjustSizeCompartments)
      if ((TotDepthC + 0.00001) < rootingd(ct)) then
         fAdd = (rootingd(ct)/0.1 - 12.)/78.
         do i = 1, 12
@@ -182,14 +180,14 @@ subroutine define_AC_compartments(n, array)
         do i = 1, 12
            TotDepthC = TotDepthC + csizes(ct,i)
         end do
-        if (rootingd(ct) - TotDepthC > ac_zero_threshold) then
+        if ((TotDepthC + 0.00001) < rootingd(ct)) then
            loop2: do
               csizes(ct,12) = csizes(ct,12) + 0.05
               TotDepthC = TotDepthC + 0.05
-              if (TotDepthC >= rootingd(ct)) exit loop2
+              if ((TotDepthC + 0.00001) >= rootingd(ct)) exit loop2
            end do loop2
         else
-           do while ((TotDepthC - 0.04999999) >= rootingd(ct))
+           do while ((TotDepthC - 0.05 + ac_zero_threshold) >= rootingd(ct))
               csizes(ct,12) = csizes(ct,12) - 0.05
               TotDepthC = TotDepthC - 0.05
            end do

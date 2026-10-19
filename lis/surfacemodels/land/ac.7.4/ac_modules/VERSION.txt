@@ -1,0 +1,6 @@
+AquaCrop source synced with sync_aquacrop.sh, do not edit the ac74_* files by hand.
+describe: v7.3_typofix-92-g4cb64cab
+commit: 4cb64cabab8c7a4f6dbf675d440254af92a04217
+subdir: src
+repo: /vsc-hard-mounts/leuven-data/336/vsc33669/src/AquaCrop
+modules: ac_climprocessing ac_defaultcropsoil ac_global ac_inforesults ac_initialsettings ac_kinds ac_preparefertilitysalinity ac_project_input ac_rootunit ac_run ac_simul ac_startunit ac_tempprocessing ac_utils
